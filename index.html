@@ -71,7 +71,7 @@
   }
   .tab.active { background: var(--terracotta); color: var(--cream-text); font-weight: 500; border-color: var(--terracotta); }
 
-  .content { flex: 1 1 auto; overflow-y: auto; padding: 14px var(--pad) 20px; max-width: 540px; margin: 0 auto; width: 100%; }
+  .content { flex: 1 1 auto; overflow-y: auto; padding: 14px var(--pad) 20px; max-width: 580px; margin: 0 auto; width: 100%; position: relative; }
   .view { display: none; }
   .view.active { display: block; }
 
@@ -117,19 +117,53 @@
   }
   .btn-check.done { background: var(--done); color: #fff; border-color: var(--done); }
 
-  .story-block, .legend-block {
+  .story-block, .legend-block, .castle-card, .route-card, .info-card {
     background: var(--parchment-deep); border: 1px solid var(--gold); border-radius: 12px;
     padding: 14px; margin-bottom: 14px; font-size: calc(15px * var(--scale)); line-height: 1.6;
   }
   .story-block h4, .legend-block h4 { margin: 0 0 6px; color: var(--terracotta); font-size: 13px; text-transform: uppercase; font-family: var(--sans); letter-spacing: 0.05em; }
 
-  #mapDiv { width: 100%; height: 56vh; min-height: 340px; border-radius: 12px; border: 1px solid var(--gold); margin-bottom: 10px; }
-  .castle-card, .route-card, .info-card {
-    background: var(--parchment-deep); border: 1px solid var(--gold); border-radius: 12px;
-    padding: 14px; margin-bottom: 12px; cursor: pointer;
-  }
   .castle-name { font-size: 1.1rem; font-weight: 600; color: var(--terracotta); margin-bottom: 2px; }
   .castle-town { font-size: 0.85rem; color: var(--ink-soft); font-family: var(--sans); margin-bottom: 6px; }
+  
+  .route-kicker { font-size: 0.75rem; color: var(--terracotta); font-weight: 700; font-family: var(--sans); margin-bottom: 2px; }
+  .route-place { font-size: 0.85rem; color: var(--ink-soft); font-family: var(--sans); margin-bottom: 6px; }
+  .route-hook { font-style: italic; border-left: 3px solid var(--terracotta); padding-left: 10px; margin-top: 8px; color: var(--ink); }
+
+  .stat-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-family: var(--sans); font-size: 0.85rem; }
+  .stat-table th { text-align: left; color: var(--terracotta); border-bottom: 1px solid var(--gold); padding: 4px; }
+  .stat-table td { padding: 4px; border-bottom: 1px solid var(--gold); }
+
+  /* Обертка вкладки карты */
+  #view-map { position: relative; height: 100%; padding: 0 !important; }
+  #mapDiv { width: 100%; height: 100%; min-height: 60vh; border-radius: 12px; border: 1px solid var(--gold); }
+
+  /* Аккуратная шторка поверх карты снизу */
+  .map-panel {
+    position: absolute; z-index: 1000; left: 12px; right: 12px; bottom: 16px;
+    background: var(--parchment-deep); border: 1.5px solid var(--gold); border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(90, 67, 39, 0.35); padding: 14px;
+    display: none; font-family: var(--sans);
+  }
+  .map-panel.open { display: block; }
+  .map-panel-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+  .map-panel-title { font-size: 1.1rem; font-weight: 600; color: var(--terracotta); font-family: 'EB Garamond', serif; }
+  .map-panel-meta { font-size: 0.8rem; color: var(--ink-soft); }
+  .map-panel-close {
+    width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--gold);
+    background: var(--parchment); color: var(--ink); font-size: 1rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex: 0 0 28px;
+  }
+  .map-panel-desc { font-size: 0.9rem; line-height: 1.5; color: var(--ink); margin-bottom: 12px; font-family: 'EB Garamond', serif; }
+  .map-panel-actions { display: flex; gap: 8px; }
+  .map-panel-speak {
+    flex: 1; min-height: 40px; border-radius: 9px; border: none;
+    background: var(--terracotta); color: var(--cream-text); font-weight: 600; font-size: 0.85rem; cursor: pointer;
+  }
+  .map-panel-open-guide {
+    background: var(--parchment); border: 1px solid var(--gold); color: var(--ink);
+    padding: 0 14px; border-radius: 9px; font-weight: 600; font-size: 0.85rem; cursor: pointer;
+  }
 
   .footer {
     flex: 0 0 auto; display: flex; align-items: center; gap: 12px;
@@ -200,7 +234,21 @@
     <!-- КАРТА -->
     <div class="view" id="view-map">
       <div id="mapDiv"></div>
-      <p style="font-size:0.85rem; color:var(--ink-soft); text-align:center; font-family:var(--sans); margin:8px 0 0;" id="mapHint"></p>
+      <!-- Аккуратная шторка поверх карты снизу -->
+      <div class="map-panel" id="mapPanel">
+        <div class="map-panel-head">
+          <div style="flex:1">
+            <div class="map-panel-title" id="mapPanelTitle"></div>
+            <div class="map-panel-meta" id="mapPanelMeta"></div>
+          </div>
+          <button class="map-panel-close" id="mapPanelClose">×</button>
+        </div>
+        <div class="map-panel-desc" id="mapPanelDesc"></div>
+        <div class="map-panel-actions">
+          <button class="map-panel-speak" id="mapPanelSpeak">🔊 Read Aloud</button>
+          <button class="map-panel-open-guide" id="mapPanelOpenGuide">📖 Full info →</button>
+        </div>
+      </div>
     </div>
 
     <!-- ЛЕГЕНДЫ -->
@@ -208,6 +256,9 @@
 
     <!-- ИНФО -->
     <div class="view" id="view-info"></div>
+
+    <!-- ПО ПУТИ -->
+    <div class="view" id="view-route"></div>
   </div>
 
   <div class="footer">
@@ -381,6 +432,69 @@ const castles = [
   }
 ];
 
+const routePlaces = [
+  {
+    title: "Koblenz — where two rivers meet", titleRu: "Кобленц — слияние двух рек",
+    place: "Koblenz / Deutsches Eck",
+    text: "The journey begins at the confluence of the Rhine and Moselle. The name Koblenz goes back to Castellum apud Confluentes.",
+    textRu: "Путешествие начинается у слияния Рейна и Мозеля. Название Кобленц восходит к римскому Castellum apud Confluentes.",
+    extra: "The monument to Kaiser Wilhelm I was inaugurated in 1897, destroyed in 1945, and reconstructed in 1993.",
+    extraRu: "Памятник кайзеру Вильгельму I был открыт в 1897 году, разрушен в 1945-м и восстановлен в 1993-м.",
+    hook: "Two rivers, one strategic point — the gateway to the gorge.",
+    hookRu: "Две реки, одна стратегическая точка — врата в ущелье."
+  },
+  {
+    title: "Stolzenfels — Rhine Romanticism", titleRu: "Штольценфелс — рейнский романтизм",
+    place: "Koblenz",
+    text: "A medieval ruin transformed into a 19th-century royal vision of the Middle Ages by Prussian Crown Prince Friedrich Wilhelm.",
+    textRu: "Средневековая руина, превращенная прусским кронпринцем Фридрихом Вильгельмом в королевское видение Средневековья.",
+    extra: "What looks medieval from the river is partly a 19th-century work of art.",
+    extraRu: "То, что с реки выглядит средневековым, отчасти является произведением искусства XIX века.",
+    hook: "A 19th-century fairy-tale fantasy built on medieval foundations.",
+    hookRu: "Сказочная фантазия XIX века на средневековом фундаменте."
+  },
+  {
+    title: "Loreley — a rock, a legend and a stage", titleRu: "Лорелей — скала, легенда и сцена",
+    place: "Loreley / St. Goarshausen",
+    text: "The 132-meter slate cliff sits at the narrowest point of the Rhine. Currents and a small waterfall created a murmuring sound ('lureln').",
+    textRu: "Сланцевая скала высотой 132 метра стоит в самом узком месте Рейна. Течение и водопад создавали глухой гул.",
+    extra: "In 1801, Clemens Brentano invented the legend; Heinrich Heine made her world-famous in 1824.",
+    extraRu: "В 1801 году Клеменс Брентано придумал легенду, а в 1824 году Генрих Гейне прославил её на весь мир.",
+    hook: "A 200-year-old poem that became an immortal river legend.",
+    hookRu: "Поэма двухсотлетней давности, ставшая бессмертной речной легендой."
+  },
+  {
+    title: "Bacharach — Victor Hugo's ancient town", titleRu: "Бахарах — древний город Виктора Гюго",
+    place: "Bacharach",
+    text: "Named after Bacchus, Roman god of wine. In 1839, Victor Hugo called it the most ancient heap of human dwellings he had ever seen.",
+    textRu: "Назван в честь Вакха. В 1839 году Виктор Гюго назвал его самым древним скоплением человеческих жилищ.",
+    extra: "Population dropped from 6,000 in the 15th century to under 2,000 today after wars and plagues.",
+    extraRu: "Население упало с 6 000 в XV веке до менее чем 2 000 сегодня из-за войн и чумы.",
+    hook: "A medieval wine town preserved in time.",
+    hookRu: "Средневековый винный городок, застывший во времени."
+  },
+  {
+    title: "The vanishing vineyards", titleRu: "Исчезающие виноградники",
+    place: "Mittelrhein region",
+    text: "Vineyards covered 2,200 hectares in 1900; today only about 460 hectares remain due to steep slopes and difficult hand-farming.",
+    textRu: "В 1900 году виноградники занимали 2 200 га; сегодня осталось около 460 га из-за крутых склонов и тяжёлого ручного труда.",
+    extra: "Wine businesses dropped from 490 in 1989 to ~165 today, mostly under 10 hectares.",
+    extraRu: "Количество винодельческих хозяйств сократилось с 490 в 1989 году до ~165 сегодня.",
+    hook: "Steep slopes, hard work and a landscape shaped by wine.",
+    hookRu: "Крутые склоны, тяжёлый труд и ландшафт, созданный вином."
+  },
+  {
+    title: "Bingen and the Mäuseturm", titleRu: "Бинген и Мышиная башня",
+    place: "Bingen",
+    text: "Gateway where the Nahe meets the Rhine. The Mäuseturm was a real 13th-century toll tower (Mautturm), later linked to the legend of Bishop Hatto.",
+    textRu: "Ворота, где Наэ встречается с Рейном. Mäuseturm была таможенной башней (Mautturm) XIII века, обросшей легендами.",
+    extra: "The mice are legend; the river tolls and the strategic gateway were very real.",
+    extraRu: "Мыши — это легенда, а речные пошлины и стратегические ворота были вполне реальными.",
+    hook: "Tolls, towers and tales of greedy bishops.",
+    hookRu: "Пошлины, башни и сказки о жадных епископах."
+  }
+];
+
 const ICONS = {
   castle: '<svg viewBox="0 0 24 24" fill="none" stroke="#B5602E" stroke-width="1.8"><path d="M3 21h18M4 21V10h3V7h2v3h2V5h2v5h2V7h2v3h3v11" stroke-linecap="round" stroke-linejoin="round"/><rect x="10" y="14" width="4" height="7" fill="#B5602E" stroke="none"/></svg>',
   tower: '<svg viewBox="0 0 24 24" fill="none" stroke="#B5602E" stroke-width="1.8"><path d="M9 21V9h6v12M8 9l1-4h6l1 4M7 21h10" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -390,18 +504,16 @@ const ICONS = {
 
 const UI = {
   en: {
-    tabs: ['Guide', 'Castles', 'Map', 'Legends', 'Info'],
+    tabs: ['Guide', 'Castles', 'Map', 'Legends', 'Info', 'Route'],
     stationLabel: (n, t) => `Station ${n} of ${t}`,
     built: 'Built', town: 'Town', play: 'Listen', check: 'Visited',
-    story: 'Historical Facts', legend: 'Legend & Lore',
-    mapHint: 'Tap a red marker on the map to open the station.'
+    story: 'Historical Facts', legend: 'Legend & Lore'
   },
   ru: {
-    tabs: ['Гид', 'Замки', 'Карта', 'Легенды', 'Инфо'],
+    tabs: ['Гид', 'Замки', 'Карта', 'Легенды', 'Инфо', 'Маршрут'],
     stationLabel: (n, t) => `Остановка ${n} из ${t}`,
     built: 'Построен', town: 'Город', play: 'Слушать', check: 'Посещено',
-    story: 'Исторические факты', legend: 'Легенды и предания',
-    mapHint: 'Нажмите на красную точку на карте, чтобы открыть станцию.'
+    story: 'Исторические факты', legend: 'Легенды и предания'
   }
 };
 
@@ -410,13 +522,14 @@ let index = 2; // Marksburg по умолчанию
 let scale = 1.0;
 const visited = new Set();
 let leafletMap = null;
+let selectedIndex = -1;
 
 function renderTabs() {
   const tabsEl = document.getElementById('tabs');
   tabsEl.innerHTML = '';
   UI[lang].tabs.forEach((label, i) => {
     const s = document.createElement('span');
-    const tabKeys = ['guide', 'castles', 'map', 'legends', 'info'];
+    const tabKeys = ['guide', 'castles', 'map', 'legends', 'info', 'route'];
     s.className = 'tab' + (tabKeys[i] === currentView ? ' active' : '');
     s.textContent = label;
     s.onclick = () => switchView(tabKeys[i]);
@@ -442,7 +555,52 @@ function renderGuide() {
   const s = castles[index];
   const t = UI[lang];
   
-  document.getElementById('photoIconContainer').innerHTML = ICONS[s.icon || 'castle'];
+function renderGuide() {
+  const s = castles[index];
+  const t = UI[lang];
+  
+  // Вывод картинки .jpg с фоновым резервным SVG на случай отсутствия файла
+  const photoContainer = document.getElementById('photoContainer');
+  if (photoContainer) {
+    photoContainer.innerHTML = `
+      <img src="${s.id}.jpg" alt="${s.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:100%; height:100%; object-fit:cover; position:absolute; inset:0;">
+      <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">
+        ${ICONS[s.icon || 'castle']}
+      </div>
+      <div class="badge" id="badge">${t.stationLabel(index + 1, castles.length)}</div>
+    `;
+  }
+
+  document.getElementById('stationTitle').textContent = s.name;
+  document.getElementById('stationDesc').textContent = lang === 'ru' ? (s.sayRu || s.factsRu) : (s.say || s.facts);
+  
+  document.getElementById('statTownLabel').textContent = t.town;
+  document.getElementById('statTown').textContent = s.town;
+  document.getElementById('statBuiltLabel').textContent = t.built;
+  document.getElementById('statBuilt').textContent = lang === 'ru' ? s.builtRu : s.built;
+
+  document.getElementById('storyTitle').textContent = t.story;
+  document.getElementById('stationFacts').textContent = lang === 'ru' ? s.factsRu : s.facts;
+
+  const legendBox = document.getElementById('legendContainer');
+  const legendTxt = lang === 'ru' ? s.legendRu : s.legend;
+  if (legendTxt) {
+    legendBox.style.display = 'block';
+    document.getElementById('legendTitle').textContent = t.legend;
+    document.getElementById('stationLegend').textContent = legendTxt;
+  } else {
+    legendBox.style.display = 'none';
+  }
+
+  document.getElementById('playLabel').textContent = t.play;
+  document.getElementById('checkBtn').classList.toggle('done', visited.has(s.id));
+  document.getElementById('progressFill').style.width = ((index + 1) / castles.length * 100) + '%';
+  document.getElementById('progressLabel').textContent = `${index + 1} / ${castles.length}`;
+  document.getElementById('prevBtn').disabled = index === 0;
+  document.getElementById('nextBtn').disabled = index === castles.length - 1;
+  renderTabs();
+  document.documentElement.style.setProperty('--scale', scale);
+}
   document.getElementById('badge').textContent = t.stationLabel(index + 1, castles.length);
   document.getElementById('stationTitle').textContent = s.name;
   document.getElementById('stationDesc').textContent = lang === 'ru' ? (s.sayRu || s.factsRu) : (s.say || s.facts);
@@ -471,7 +629,6 @@ function renderGuide() {
   document.getElementById('progressLabel').textContent = `${index + 1} / ${castles.length}`;
   document.getElementById('prevBtn').disabled = index === 0;
   document.getElementById('nextBtn').disabled = index === castles.length - 1;
-  document.getElementById('mapHint').textContent = t.mapHint;
   renderTabs();
   document.documentElement.style.setProperty('--scale', scale);
 }
@@ -479,7 +636,7 @@ function renderGuide() {
 function renderCastlesList() {
   const el = document.getElementById('view-castles');
   el.innerHTML = castles.map((c, i) => `
-    <div class="castle-card" onclick="index=${i}; switchView('guide'); renderGuide();">
+    <div class="castle-card" onclick="index=${i}; switchView('guide'); renderGuide();" style="cursor:pointer;">
       <div class="castle-name">${c.name}</div>
       <div class="castle-town">${c.town} • ${lang === 'ru' ? c.builtRu : c.built}</div>
     </div>
@@ -497,10 +654,39 @@ function renderLegendsList() {
   `).join('');
 }
 
+function renderRouteList() {
+  const el = document.getElementById('view-route');
+  el.innerHTML = routePlaces.map((r, i) => `
+    <div class="route-card">
+      <div class="route-kicker">${String(i+1).padStart(2,'0')}</div>
+      <div class="castle-name">${lang === 'ru' ? r.titleRu : r.title}</div>
+      <div class="route-place">${r.place}</div>
+      <p style="margin:6px 0;">${lang === 'ru' ? r.textRu : r.text}</p>
+      <p style="margin:6px 0; color:var(--ink-soft);">${lang === 'ru' ? r.extraRu : r.extra}</p>
+      <div class="route-hook">${lang === 'ru' ? r.hookRu : r.hook}</div>
+    </div>
+  `).join('');
+}
+
 function renderInfo() {
   const el = document.getElementById('view-info');
   el.innerHTML = `
-    <div class="castle-card">
+    <div class="info-card">
+      <div class="castle-name">${lang === 'ru' ? '👥 Население городов на маршруте' : '👥 Towns along the route — population'}</div>
+      <table class="stat-table">
+        <tr><th>${lang === 'ru' ? 'Город' : 'Town'}</th><th>${lang === 'ru' ? 'Население' : 'Population'}</th></tr>
+        <tr><td>Koblenz</td><td>~114,000</td></tr>
+        <tr><td>Lahnstein</td><td>~18,000</td></tr>
+        <tr><td>Braubach</td><td>~3,000</td></tr>
+        <tr><td>Boppard</td><td>~15,500</td></tr>
+        <tr><td>St. Goar</td><td>~2,900</td></tr>
+        <tr><td>Oberwesel</td><td>~2,900</td></tr>
+        <tr><td>Bacharach</td><td>~1,850</td></tr>
+        <tr><td>Bingen</td><td>~26,000</td></tr>
+        <tr><td>Rüdesheim</td><td>~10,000</td></tr>
+      </table>
+    </div>
+    <div class="info-card">
       <div class="castle-name">UNESCO World Heritage</div>
       <p style="margin:6px 0 0; line-height:1.5;">Since 2002, the Upper Middle Rhine Valley (~65 km) is a UNESCO World Heritage Site for its unique cultural landscape of castles, vineyards and small towns.</p>
     </div>
@@ -508,6 +694,11 @@ function renderInfo() {
 }
 
 function initMap() {
+  if (leafletMap) {
+    setTimeout(() => leafletMap.invalidateSize(), 50);
+    return;
+  }
+
   leafletMap = L.map('mapDiv', { scrollWheelZoom: true }).setView([50.08, 7.75], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(leafletMap);
   
@@ -518,14 +709,57 @@ function initMap() {
     const marker = L.circleMarker([c.lat, c.lng], {
       radius: 10, color: '#fff', weight: 2, fillColor: '#B5602E', fillOpacity: 1
     }).addTo(leafletMap);
+    
     marker.on('click', () => {
-      index = i;
-      switchView('guide');
-      renderGuide();
+      selectedIndex = i;
+      showMapPanel(i);
     });
     marker.bindTooltip(c.name);
   });
-  if (points.length) leafletMap.fitBounds(points, { padding: [20, 20] });
+
+  if (points.length) {
+    L.polyline(points, { color: '#B5602E', weight: 2, opacity: 0.6, dashArray: '4 6' }).addTo(leafletMap);
+    leafletMap.fitBounds(points, { padding: [20, 20] });
+  }
+
+  document.getElementById('mapPanelClose').onclick = () => {
+    document.getElementById('mapPanel').classList.remove('open');
+    selectedIndex = -1;
+  };
+
+  document.getElementById('mapPanelOpenGuide').onclick = () => {
+    if (selectedIndex >= 0) {
+      index = selectedIndex;
+      switchView('guide');
+      renderGuide();
+    }
+  };
+
+  document.getElementById('mapPanelSpeak').onclick = () => {
+    if (!('speechSynthesis' in window) || selectedIndex < 0) return;
+    window.speechSynthesis.cancel();
+    const c = castles[selectedIndex];
+    const text = lang === 'ru' ? (c.sayRu || c.factsRu) : (c.say || c.facts);
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang === 'ru' ? 'ru-RU' : 'en-US';
+    utterance.rate = 0.9;
+    window.speechSynthesis.speak(utterance);
+  };
+}
+
+function showMapPanel(i) {
+  const c = castles[i];
+  const panel = document.getElementById('mapPanel');
+  if (!panel) return;
+
+  document.getElementById('mapPanelTitle').textContent = c.name;
+  document.getElementById('mapPanelMeta').textContent = `${c.town}${c.pop && c.pop !== '—' ? ' · ' + c.pop : ''} • ${lang === 'ru' ? c.builtRu : c.built}`;
+  
+  const shortText = lang === 'ru' ? (c.sayRu || c.factsRu) : (c.say || c.facts);
+  document.getElementById('mapPanelDesc').textContent = shortText;
+  
+  panel.classList.add('open');
+  if (leafletMap) leafletMap.panTo([c.lat, c.lng], { animate: true, duration: 0.3 });
 }
 
 document.getElementById('prevBtn').addEventListener('click', () => { if (index > 0) { index--; renderGuide(); } });
@@ -543,6 +777,7 @@ document.querySelectorAll('.pill-btn[data-lang]').forEach(btn => {
     renderGuide();
     renderCastlesList();
     renderLegendsList();
+    renderRouteList();
     renderInfo();
   });
 });
@@ -550,7 +785,7 @@ document.querySelectorAll('.pill-btn[data-lang]').forEach(btn => {
 document.getElementById('fontMinus').addEventListener('click', () => { scale = Math.max(0.85, scale - 0.1); renderGuide(); });
 document.getElementById('fontPlus').addEventListener('click', () => { scale = Math.min(1.3, scale + 0.1); renderGuide(); });
 
-// Синтез речи (Озвучка)
+// Синтез речи (Озвучка для гида)
 document.getElementById('playBtn').addEventListener('click', () => {
   if (!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
@@ -562,10 +797,11 @@ document.getElementById('playBtn').addEventListener('click', () => {
   window.speechSynthesis.speak(utterance);
 });
 
-// Инициализация
+// Инициализация при загрузке
 renderGuide();
 renderCastlesList();
 renderLegendsList();
+renderRouteList();
 renderInfo();
 
 if ('serviceWorker' in navigator) {
