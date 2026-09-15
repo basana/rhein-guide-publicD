@@ -78,15 +78,32 @@
   .photo {
     position: relative; width: 100%; aspect-ratio: 1 / 1;
     margin: 4px 0 18px; border-radius: 14px; overflow: hidden;
-    background: linear-gradient(180deg, #E8D9B5 0%, #D9C193 55%, #B98B4F 100%);
-    display: flex; align-items: center; justify-content: center; border: 1px solid var(--gold);
+    background: #E8D9B5; border: 1px solid var(--gold);
   }
-  .photo svg { width: 45%; height: 45%; opacity: 0.85; }
+  .photo img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
 
   .badge {
     position: absolute; top: 10px; left: 10px;
     background: rgba(181, 96, 46, 0.92); color: var(--cream-text);
     font-size: 11px; padding: 4px 10px; border-radius: 20px; font-family: var(--sans);
+    z-index: 10;
+  }
+
+  /* Точки карусели прямо поверх нижней части фото */
+  .photo-dots {
+    position: absolute; bottom: 12px; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 6px; z-index: 10;
+    pointer-events: none;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(246, 238, 221, 0.7); border: 1px solid var(--gold);
+    cursor: pointer; pointer-events: auto; transition: all 0.2s ease;
+  }
+  .dot.active {
+    background: var(--terracotta); border-color: var(--cream-text); transform: scale(1.25);
   }
 
   .station-title {
@@ -134,11 +151,9 @@
   .stat-table th { text-align: left; color: var(--terracotta); border-bottom: 1px solid var(--gold); padding: 4px; }
   .stat-table td { padding: 4px; border-bottom: 1px solid var(--gold); }
 
-  /* Обертка вкладки карты */
   #view-map { position: relative; height: 100%; padding: 0 !important; }
   #mapDiv { width: 100%; height: 100%; min-height: 60vh; border-radius: 12px; border: 1px solid var(--gold); }
 
-  /* Аккуратная шторка поверх карты снизу */
   .map-panel {
     position: absolute; z-index: 1000; left: 12px; right: 12px; bottom: 16px;
     background: var(--parchment-deep); border: 1.5px solid var(--gold); border-radius: 14px;
@@ -200,8 +215,9 @@
     <!-- ГИД -->
     <div class="view active" id="view-guide">
       <div class="photo">
-        <div id="photoIconContainer"></div>
+        <img id="mainPhoto" src="" alt="Location photo">
         <div class="badge" id="badge"></div>
+        <div class="photo-dots" id="photoDots"></div>
       </div>
 
       <h1 class="station-title" id="stationTitle"></h1>
@@ -228,13 +244,12 @@
       </div>
     </div>
 
-    <!-- ЗАМКИ -->
+    <!-- ТОЧКИ И ЗАМКИ -->
     <div class="view" id="view-castles"></div>
 
     <!-- КАРТА -->
     <div class="view" id="view-map">
       <div id="mapDiv"></div>
-      <!-- Аккуратная шторка поверх карты снизу -->
       <div class="map-panel" id="mapPanel">
         <div class="map-panel-head">
           <div style="flex:1">
@@ -273,162 +288,244 @@
 <script>
 const castles = [
   {
+    id: "koblenz_altstadt", lat: 50.3600, lng: 7.5978,
+    name: "Koblenz Old Town & Deutsches Eck", town: "Koblenz", pop: "~114,000",
+    built: "Roman origins / Deutsches Eck 1897", builtRu: "Римское основание / Дез.-Экк 1897",
+    destroyed: "Damaged in WWII, restored", destroyedRu: "Поврежден в ВОВ, восстановлен",
+    facts: "Koblenz is over 2,000 years old, founded by the Romans as 'Castellum apud Confluentes'. At the Deutsches Eck, the Moselle river flows into the Rhine, overseen by the monumental equestrian statue of Kaiser Wilhelm I.",
+    factsRu: "Кобленцу более 2000 лет, он основан римлянами как «Castellum apud Confluentes». У Дез-Экк река Мозель впадает в Рейн под взором монументального конного памятника кайзеру Вильгельму I.",
+    legend: "The city's history is tied to centuries of trade, archbishop-electors, and its pivotal strategic position at the gateway to the Rhine Gorge.",
+    legendRu: "История города связана с веками торговли, курфюрстами-архиепископами и важнейшим стратегическим положением у врат в рейнское ущелье.",
+    say: "Welcome to Koblenz — where the Rhine and Moselle rivers meet at the famous Deutsches Eck.",
+    sayRu: "Добро пожаловать в Кобленц — место слияния Рейна и Мозеля у знаменитого Дез-Экк."
+  },
+  {
+    id: "ehrenbreitstein", lat: 50.3644, lng: 7.6136,
+    name: "Festung Ehrenbreitstein", town: "Koblenz", pop: "~114,000",
+    built: "16th c. (Prussian fortification 1817–28)", builtRu: "XVI в. (прусская крепость 1817–28)",
+    destroyed: "Blown up by French 1801, rebuilt", destroyedRu: "Взорвана французами в 1801, отстроена",
+    facts: "Perched 118 meters above the Rhine, Ehrenbreitstein is one of Europe's largest historical fortresses. The current massive stone structure was built by Prussia to guard the strategic river crossing against France.",
+    factsRu: "Возвышаясь на 118 метров над Рейном, Эренбрайтштайн является одной из крупнейших исторических крепостей Европы. Нынешняя мощная каменная структура построена Пруссией для защиты переправы.",
+    legend: "A massive fortress that was virtually impregnable, offering the most breathtaking panoramic view over the entire Rhine-Moselle basin.",
+    legendRu: "Мощная крепость, считавшаяся неприступной, откуда открывается самый захватывающий панорамный вид на весь бассейн Рейна и Мозеля.",
+    say: "A massive cliff-top fortress overlooking the confluence of the two rivers.",
+    sayRu: "Громадная крепость на скале с видом на слияние двух рек."
+  },
+  {
     id: "stolzenfels", lat: 50.3031061, lng: 7.5921284,
     name: "Schloss Stolzenfels", town: "Koblenz", pop: "~114,000",
     built: "13th c. (rebuilt 1836–42)", builtRu: "XIII век (перестроен в 1836–42)",
     destroyed: "Destroyed by the French", destroyedRu: "Разрушен французами",
-    facts: "A castle stood here from the 1200s. It watched over ships on the river, and over some nearby silver mines. French soldiers destroyed it. Then, in the 1830s, Prussia rebuilt it as a grand new palace, for a future king.",
-    factsRu: "Замок стоял здесь с XIII века. Он следил за кораблями на реке и за соседними серебряными шахтами. Французские солдаты его разрушили. Потом, в 1830-х годах, Пруссия построила на этом месте новый роскошный дворец — для будущего короля.",
-    legend: "This castle has no old ghost story. Its real story is more interesting: 700 years later, a king took an old ruin and turned it into his own dream of the Middle Ages.",
-    legendRu: "У этого замка нет старой легенды о призраках. Его настоящая история интереснее: через 700 лет король взял старую руину и превратил её в свою мечту о Средневековье.",
-    say: "This castle looks medieval. But most of what you see is only 200 years old — built to look old.",
-    sayRu: "Этот замок выглядит средневековым. Но почти всё, что вы видите, построено всего 200 лет назад — специально, чтобы выглядеть старым."
+    facts: "A castle stood here from the 1200s. It watched over ships on the river and nearby silver mines. French soldiers destroyed it. In the 1830s, Prussia rebuilt it as a grand palace for a future king.",
+    factsRu: "Замок стоял здесь с XIII века. Он следил за кораблями на реке и серебряными шахтами. Французы разрушили его. В 1830-х Пруссия восстановила его как роскошный дворец для будущего короля.",
+    legend: "A king took an old ruin and turned it into his own romantic dream of the Middle Ages.",
+    legendRu: "Король взял старую руину и превратил её в свою романтическую мечту о Средневековье.",
+    say: "This castle looks medieval, but most of it is a 19th-century royal romantic masterpiece.",
+    sayRu: "Этот замок выглядит средневековым, но большая его часть — шедевр романтизма XIX века."
   },
   {
     id: "lahneck", lat: 50.3065479, lng: 7.6123627,
     name: "Burg Lahneck", town: "Lahnstein", pop: "~18,000",
     built: "13th century", builtRu: "XIII век",
     destroyed: "Destroyed by the French (1689 / 1794)", destroyedRu: "Разрушен французами (1689 и 1794)",
-    facts: "Built in the 1200s, right where the small river Lahn meets the Rhine. French troops destroyed it — first in 1689, and again in 1794. Like so many castles here, it was rebuilt in the 1800s.",
-    factsRu: "Построен в XIII веке, там, где маленькая река Лан впадает в Рейн. Французские войска разрушили его — сначала в 1689 году, потом снова в 1794-м. Как и многие замки здесь, его восстановили в XIX веке.",
-    legend: "People say that Knights Templar hid here long ago, after their order was shut down. It's a nice story — but historians can't prove it really happened.",
-    legendRu: "Говорят, здесь когда-то прятались рыцари-тамплиеры, после того как их орден распустили. Красивая история — но историки не могут её доказать."
+    facts: "Built in the 1200s, right where the small river Lahn meets the Rhine. French troops destroyed it twice. Rebuilt in the 19th century.",
+    factsRu: "Построен в XIII веке в месте впадения реки Лан в Рейн. Французы разрушали его дважды. Восстановлен в XIX веке.",
+    legend: "People say that Knights Templar hid here long ago after their order was dissolved.",
+    legendRu: "Говорят, здесь прятались тамплиеры после того, как их орден был распущен.",
+    say: "Guarding the mouth of the Lahn river with dramatic medieval towers.",
+    sayRu: "Охраняет устье реки Лан своими впечатляющими средневековыми башнями."
   },
   {
     id: "marksburg", lat: 50.2720119, lng: 7.64926,
     name: "Marksburg", town: "Braubach", pop: "~3,000",
     built: "c. 1231", builtRu: "около 1231 года",
     destroyed: "Never destroyed", destroyedRu: "Никогда не был разрушен",
-    facts: "This is the only castle on the whole Rhine that was never destroyed. Building started around 1231. Over hundreds of years, people kept adding new parts to it.",
-    factsRu: "Это единственный замок на всём Рейне, который никогда не разрушали. Строительство началось около 1231 года. Сотни лет люди достраивали к нему новые части.",
-    legend: "It only got the name 'Marksburg' much later, in the 1400s, when a chapel to Saint Mark was added.",
-    legendRu: "Название «Марксбург» он получил намного позже, в XV веке, когда добавили часовню святого Марка."
+    facts: "The only castle on the whole Rhine that was never destroyed. Building started around 1231, with additions over centuries.",
+    factsRu: "Единственный замок на всем Рейне, который никогда не был разрушен. Строился с 1231 года.",
+    legend: "Named after Saint Mark following the construction of its chapel in the 15th century.",
+    legendRu: "Получил название в честь святого Марка после постройки часовни в XV веке.",
+    say: "The ultimate intact medieval fortress perched high above Braubach.",
+    sayRu: "Единственная уцелевшая средневековая крепость над Браубахом."
+  },
+  {
+    id: "braubach", lat: 50.2735, lng: 7.6480,
+    name: "Braubach & Historic Town", town: "Braubach", pop: "~3,000",
+    built: "13th century town walls", builtRu: "Городские стены XIII века",
+    destroyed: "Maintained historic core", destroyedRu: "Историческое ядро сохранено",
+    facts: "A picturesque medieval wine town lying directly at the foot of Marksburg. It features well-preserved half-timbered houses, ancient town gates, and a rich history of mining and winemaking.",
+    factsRu: "Живописный средневековый винный городок у подножия Марксбурга. Сохранил фахверковые дома, старинные городские ворота и традиции виноделия.",
+    legend: "Braubach offers a pristine glimpse into the life of a medieval Rhine settlement protected by its towering fortress.",
+    legendRu: "Браубах дает подлинное представление о жизни средневекового рейнского поселения под защитой грозной крепости.",
+    say: "A charming half-timbered town nestled beneath the mighty Marksburg.",
+    sayRu: "Очаровательный фахверковый городок у подножия могучего Марксбурга."
+  },
+  {
+    id: "boppard", lat: 50.2319, lng: 7.5925,
+    name: "Boppard (Bopparder Hamm)", town: "Boppard", pop: "~15,500",
+    built: "Roman fort (Baudobriga) / Middle Ages", builtRu: "Римский форт / Средневековье",
+    destroyed: "Town walls partially dismantled", destroyedRu: "Городские стены частично разобраны",
+    facts: "Boppard is famous for the Bopparder Hamm — the largest loop of the Rhine river. It has ancient Roman thermal bath remnants, a stunning Carmelite church, and thriving steep-slope vineyards.",
+    factsRu: "Боппард знаменит Боппардской излучиной — самым большим изгибом Рейна. Здесь находятся римские термы, готическая церковь и крутые виноградники.",
+    legend: "The sweeping loop of the Rhine at Boppard offers one of the most famous and romantic river vistas in Germany.",
+    legendRu: "Широкий изгиб Рейна у Боппарда дарит один из самых известных и романтичных речных видов Германии.",
+    say: "Home to the largest loop of the Rhine and famous steep-slope vineyards.",
+    sayRu: "Родина величайшей излучины Рейна и знаменитых крутых виноградников."
   },
   {
     id: "maus", lat: 50.1719014, lng: 7.695775,
     name: "Burg Maus (\"Mouse Castle\")", town: "Wellmich / St. Goarshausen", pop: "—",
     built: "1356 (started)", builtRu: "начат в 1356 году",
     destroyed: "Never destroyed", destroyedRu: "Никогда не был разрушен",
-    facts: "Building started in 1356. A powerful archbishop built it to protect his own river tolls, against the family who built 'the Cat' nearby.",
-    factsRu: "Строительство началось в 1356 году. Могущественный архиепископ построил его, чтобы защищать свои речные пошлины от семьи, построившей соседний замок «Кот».",
-    legend: "Local people joked that the 'cat' castle would one day eat the 'mouse' castle. It never did — the mouse is still standing today.",
-    legendRu: "Местные жители шутили, что замок «Кот» когда-нибудь съест замок «Мышь». Этого так и не случилось — «Мышь» стоит до сих пор."
+    facts: "Built from 1356 by the Archbishop of Trier to protect river tolls against rival lords.",
+    factsRu: "Построен с 1356 года архиепископом Трирским для защиты речных пошлин от соперников.",
+    legend: "Locals joked that the nearby 'Cat Castle' would eat the 'Mouse' — but the Mouse stands firm.",
+    legendRu: "Местные шутили, что соседний замок «Кот» съест «Мышь», но Мышь стоит до сих пор.",
+    say: "Built as a strategic counter-weight to rival castles across the valley.",
+    sayRu: "Построен как стратегический противовес замкам-соперникам."
   },
   {
     id: "rheinfels", lat: 50.1544865, lng: 7.704412,
     name: "Burg Rheinfels", town: "St. Goar", pop: "~2,900",
     built: "1245", builtRu: "1245 год",
     destroyed: "Destroyed by the French (1794–97)", destroyedRu: "Разрушен французами (1794–97)",
-    facts: "Built in 1245 to collect tolls from ships. It grew into the biggest fortress on the whole Rhine. In 1692, it held out against 28,000 French soldiers.",
-    factsRu: "Построен в 1245 году, чтобы собирать пошлину с кораблей. Со временем он стал самой большой крепостью на всём Рейне. В 1692 году он выдержал осаду 28 000 солдат.",
-    legend: "People still remember that 1692 defense with pride. It was one of the very few times a Rhine fortress beat the French king's army.",
-    legendRu: "Оборону 1692 года здесь до сих пор вспоминают с гордостью."
+    facts: "Built in 1245 to collect tolls. It grew into the biggest fortress on the Rhine and successfully withstood 28,000 French soldiers in 1692.",
+    factsRu: "Построен в 1245 для сбора пошлин. Вырос в крупнейшую крепость на Рейне и выдержал осаду 28 тыс. французов в 1692 году.",
+    legend: "One of the very few Rhine fortresses that successfully repelled major invading armies.",
+    legendRu: "Одна из немногих рейнских крепостей, успешно отражавших крупные армии захватчиков.",
+    say: "The sprawling ruins of the largest military fortress on the Middle Rhine.",
+    sayRu: "Обширные руины крупнейшей военной крепости Среднего Рейна."
   },
   {
     id: "katz", lat: 50.1519634, lng: 7.7242583,
     name: "Burg Katz (\"Cat Castle\")", town: "St. Goarshausen", pop: "~1,300",
     built: "1371", builtRu: "1371 год",
     destroyed: "Blown up by Napoleon (1806)", destroyedRu: "Взорван по приказу Наполеона (1806)",
-    facts: "Built in 1371, to protect the local toll and to challenge a rival castle nearby. Napoleon had it blown up in 1806.",
-    factsRu: "Построен в 1371 году — чтобы защищать местную пошлину и бросать вызов сопернику. Наполеон приказал взорвать его в 1806 году.",
-    legend: "People nicknamed it 'the Cat.' Just across the valley stood 'the Mouse' — a rival castle.",
-    legendRu: "Его прозвали «Кот». А прямо через долину стоял замок-соперник — «Мышь»."
+    facts: "Built in 1371 to challenge rival tolls. Blown up on Napoleon's orders in 1806.",
+    factsRu: "Построен в 1371 году для контроля пошлин. Взорван по приказу Наполеона в 1806 году.",
+    legend: "Directly opposed to Burg Maus across the valley, forming the famous Cat-and-Mouse rivalry.",
+    legendRu: "Противостоит замку Мышь, образуя знаменитое соперничество Кота и Мыши.",
+    say: "The proud 'Cat' castle standing guard above St. Goarshausen.",
+    sayRu: "Гордый замок «Кот», охраняющий берег над Санкт-Гоарсхаузеном."
   },
   {
-    id: "loreley", icon: "rock", lat: 50.1391667, lng: 7.7280556,
+    id: "loreley", lat: 50.1391667, lng: 7.7280556,
     name: "Loreley-Felsen (\"The Loreley Rock\")", town: "St. Goarshausen", pop: "—",
     built: "Natural rock; legend from 1801", builtRu: "природная скала; легенда — с 1801 года",
     destroyed: "—", destroyedRu: "—",
-    facts: "This is a steep rock, about 130 meters high. It sits at the narrowest point of the whole Rhine. Strong currents and hidden rocks here caused many real shipwrecks.",
-    factsRu: "Это крутая скала высотой около 130 метров. Она стоит в самом узком месте всего Рейна. Сильное течение и скрытые камни здесь вызывали немало кораблекрушений.",
-    legend: "In 1801, a writer named Clemens Brentano invented a sad woman who drowns herself here. In 1824, Heinrich Heine made her famous — a beautiful woman who sits on the rock and sings.",
-    legendRu: "В 1801 году писатель Клеменс Брентано придумал грустную женщину, которая топится здесь. В 1824 году Генрих Гейне сделал её знаменитой красавицей, поющей на скале."
-  },
-  {
-    id: "sooneck", lat: 50.019453, lng: 7.8248973,
-    name: "Burg Sooneck", town: "Niederheimbach", pop: "~750",
-    built: "11th–12th c.", builtRu: "XI–XII века",
-    destroyed: "Destroyed 1282, again 1689 by the French", destroyedRu: "Разрушен в 1282, снова французами в 1689",
-    facts: "Built in the 1000s or 1100s. Like neighbor Reichenstein, it was home to robber knights. Restored in 1842 by the Prussian royal family.",
-    factsRu: "Построен в XI или XII веке. Как и соседний Райхенштайн, был домом рыцарей-разбойников. Восстановлен в 1842 году прусской королевской семьей.",
-    legend: "It shares the same robber-knight story as Reichenstein, reminding us of a time when local lords took what they wanted from ships.",
-    legendRu: "У него та же история про рыцарей-разбойников, что и у Райхенштайна."
-  },
-  {
-    id: "reichenstein", lat: 50.0064884, lng: 7.8529685,
-    name: "Burg Reichenstein", town: "Trechtingshausen", pop: "~1,500",
-    built: "11th–13th c.", builtRu: "XI–XIII века",
-    destroyed: "Destroyed 1253 and again 1282", destroyedRu: "Разрушен в 1253 и снова в 1282",
-    facts: "Robber knights lived here. The emperor's army destroyed it in 1282. Rebuilt in the late 1800s by a rich family.",
-    factsRu: "Здесь жили рыцари-разбойники. Армия императора разрушила замок в 1282 году. В конце XIX века богатая семья восстановила его.",
-    legend: "The last robber knight was caught and sentenced to death. Legend says his headless body walked past several of his sons before falling.",
-    legendRu: "Последнего рыцаря-разбойника поймали и казнили. Легенда гласит, что его обезглавленное тело прошло мимо сыновей, прежде чем упасть."
-  },
-  {
-    id: "rheinstein", lat: 49.9935693, lng: 7.8583103,
-    name: "Burg Rheinstein", town: "Trechtingshausen", pop: "~1,500",
-    built: "c. 1282–1329", builtRu: "около 1282–1329",
-    destroyed: "Fell into disrepair", destroyedRu: "Обветшал",
-    facts: "In 1823, a Prussian prince bought the ruin and rebuilt it — the very first Rhine castle rebuilt in this new, romantic style.",
-    factsRu: "В 1823 году прусский принц купил руину и восстановил её — это был самый первый рейнский замок в новом романтическом стиле.",
-    legend: "Famous guests stayed here later, including Queen Victoria of England.",
-    legendRu: "Позже здесь останавливалась королева Виктория Английская."
+    facts: "A 132-meter slate cliff at the narrowest and most dangerous point of the Rhine, notorious for historical shipwrecks.",
+    factsRu: "Сланцевая скала высотой 132 метра в самом узком и опасном месте Рейна, известная кораблекрушениями.",
+    legend: "Heinrich Heine's 1824 poem immortalized the siren maiden combing her golden hair and enchanting sailors.",
+    legendRu: "Поэма Генриха Гейне 1824 года обессмертила сирену, расчесывающую золотые волосы и манящую моряков.",
+    say: "The legendary 132-meter cliff that inspired poets and frightened boatmen.",
+    sayRu: "Легендарная 132-метровая скала, вдохновлявшая поэтов и пугавшая судоводителей."
   },
   {
     id: "gutenfels", lat: 50.0879075, lng: 7.7658988,
     name: "Burg Gutenfels", town: "Kaub", pop: "~1,000",
     built: "1222", builtRu: "1222 год",
-    destroyed: "Partly demolished on Napoleon's orders", destroyedRu: "Частично снесён по приказу Наполеона",
-    facts: "Built in 1222 to help guard the river toll. Survived a week-long siege in 1504 ('good, solid rock'). Rebuilt from 1889.",
-    factsRu: "Построен в 1222 году для охраны пошлин. Выдержал осаду в 1504 году («добрая, крепкая скала»). Восстановлен с 1889 года.",
-    legend: "A romantic story says a count's sister married a mystery knight who turned out to be a future king.",
-    legendRu: "Романтическая история гласит, что сестра графа вышла замуж за таинственного рыцаря, оказавшегося будущим королём."
+    destroyed: "Partly demolished 1806", destroyedRu: "Частично снесен в 1806",
+    facts: "Guarded the Kaub toll station alongside Pfalzgrafenstein. Survived legendary sieges.",
+    factsRu: "Охранял таможню в Каубе вместе с Пфальцграфенштайном. Выдержал легендарные осады.",
+    legend: "Romance tells of a noble count's sister who wedded an unrecognized king.",
+    legendRu: "Романтическая легенда гласит о сестре графа, вышедшей замуж за тайного короля.",
+    say: "Towering high above Kaub and the island toll castle.",
+    sayRu: "Возвышается над Каубом и островным замком-таможней."
   },
   {
     id: "pfalzgrafenstein", lat: 50.0831239, lng: 7.7655246,
     name: "Pfalzgrafenstein", town: "Kaub (river island)", pop: "—",
     built: "From 1326", builtRu: "с 1326 года",
     destroyed: "Never seriously destroyed", destroyedRu: "Никогда не разрушался",
-    facts: "Built on a tiny rocky island in the middle of the river. Its only job was collecting money from ships passing by. Accessible only by boat.",
-    factsRu: "Построен на крошечном острове посреди реки для сбора пошлин с проходящих судов. Добраться можно только на лодке.",
-    legend: "Some people say noble women came here to give birth — a nice story, but it was strictly a toll station.",
-    legendRu: "Говорят, сюда приезжали рожать знатные женщины — красивая легенда, но на деле это была лишь таможня."
+    facts: "A stone ship anchored forever on a rocky island in the middle of the Rhine, built strictly to collect tolls.",
+    factsRu: "Каменный корабль, вечно стоящий на острове посреди Рейна, построенный исключительно для сбора пошлин.",
+    legend: "Strictly a toll station, though myths claimed noble countesses came here to give birth safely.",
+    legendRu: "Строго таможенный пункт, хотя мифы утверждали, что графини приезжали сюда рожать.",
+    say: "The unique stone toll castle sitting on a tiny island in the middle of the river.",
+    sayRu: "Уникальный каменный замок-таможня на крошечном острове посреди реки."
   },
   {
-    id: "stahleck", lat: 50.0581089, lng: 7.7657011,
-    name: "Burg Stahleck", town: "Bacharach", pop: "~1,850",
-    built: "12th century", builtRu: "XII век",
-    destroyed: "Destroyed by the French (1689)", destroyedRu: "Разрушен французами (1689)",
-    facts: "Built in the 1100s. French troops destroyed it in 1689. Rebuilt in 1925–38 as a youth hostel.",
-    factsRu: "Построен в XII веке. Французские войска разрушили его в 1689 году. Восстановлен в 1925–38 годах как молодёжное общежитие."
+    id: "bacharach", lat: 50.0581089, lng: 7.7657011,
+    name: "Bacharach & Burg Stahleck", town: "Bacharach", pop: "~1,850",
+    built: "Town 12th c. / Castle 12th c.", builtRu: "Город XII в. / Замок Штальек XII в.",
+    destroyed: "Destroyed by French 1689", destroyedRu: "Разрушен французами в 1689",
+    facts: "Bacharach is one of the best-preserved medieval wine towns on the Rhine, celebrated by Victor Hugo. Overlooking it is Burg Stahleck, built in the 12th century and now serving as a popular youth hostel.",
+    factsRu: "Бахарах — один из лучше всего сохранившихся средневековых винных городов на Рейне, воспетый Виктором Гюго. Над ним возвышается замок Штальек (XII век), ныне молодежная турбаза.",
+    legend: "Named after Bacchus, the Roman god of wine, owing to its centuries-old steep hillside vineyards.",
+    legendRu: "Назван в честь Вакха, римского бога вина, благодаря своим древним виноградникам на склонах.",
+    say: "A quintessential medieval wine town overlooked by historic Burg Stahleck.",
+    sayRu: "Изумительный средневековый винный городок под взором исторического замка Штальек."
   },
   {
-    id: "maeuseturm", icon: "tower", lat: 49.9720141, lng: 7.8804018,
+    id: "sooneck", lat: 50.019453, lng: 7.8248973,
+    name: "Burg Sooneck", town: "Niederheimbach", pop: "~750",
+    built: "11th–12th c.", builtRu: "XI–XII века",
+    destroyed: "Destroyed 1282, again 1689", destroyedRu: "Разрушен в 1282 и 1689",
+    facts: "Originally a robber knight stronghold, destroyed by imperial forces and later rebuilt in the 19th century by Prussian royals.",
+    factsRu: "Изначально убежище рыцарей-разбойников, разрушенное войсками и восстановленное прусскими монархами.",
+    legend: "A testament to the lawless era when river lords preyed upon passing merchant ships.",
+    legendRu: "Свидетельство эпохи беззакония, когда речные лорды грабили проходящие торговые суда.",
+    say: "A restored romantic castle with deep ties to the Prussian royal family.",
+    sayRu: "Восстановленный романтический замок с тесными связями с прусской короной."
+  },
+  {
+    id: "reichenstein", lat: 50.0064884, lng: 7.8529685,
+    name: "Burg Reichenstein", town: "Trechtingshausen", pop: "~1,500",
+    built: "11th–13th c.", builtRu: "XI–XIII века",
+    destroyed: "Destroyed 1253 and 1282", destroyedRu: "Разрушен в 1253 и 1282",
+    facts: "Famous robber knight stronghold captured and destroyed in 1282, later rebuilt in neo-Gothic splendor.",
+    factsRu: "Знаменитое гнездо рыцарей-разбойников, разрушенное в 1282 году и позже отстроенное в неоготике.",
+    legend: "Legends speak of headless robber knights and dramatic imperial justice.",
+    legendRu: "Легенды рассказывают об обезглавленных рыцарях-разбойниках и суровом имперском правосудии.",
+    say: "Perched dramatically above the river with sweeping collections of medieval armor.",
+    sayRu: "Эффектно возвышается над рекой, храня коллекции средневековых доспехов."
+  },
+  {
+    id: "rheinstein", lat: 49.9935693, lng: 7.8583103,
+    name: "Burg Rheinstein", town: "Trechtingshausen", pop: "~1,500",
+    built: "c. 1282–1329", builtRu: "около 1282–1329",
+    destroyed: "Fell into disrepair", destroyedRu: "Обветшал",
+    facts: "The very first Rhine castle to be romanticized and rebuilt in the 19th century by Prince Friedrich of Prussia.",
+    factsRu: "Самый первый рейнский замок, романтизированный и восстановленный в XIX веке принцем Фридрихом Прусским.",
+    legend: "Queen Victoria of England was among its illustrious royal guests.",
+    legendRu: "Королева Англии Виктория была среди его прославленных августейших гостей.",
+    say: "A fairy-tale castle draped in ivy, bridging medieval grit and 19th-century romance.",
+    sayRu: "Сказочный замок в плюще, соединяющий средневековую суровость и романтику XIX века."
+  },
+  {
+    id: "ruedesheim", lat: 49.9776, lng: 7.9222,
+    name: "Rüdesheim am Rhein", town: "Rüdesheim", pop: "~10,000",
+    built: "Medieval town / Brömserburg 1210", builtRu: "Средневековый город / Брёмзербург 1210",
+    destroyed: "Restored historic wine center", destroyedRu: "Восстановленный винный центр",
+    facts: "World-famous wine town at the southern gateway of the gorge. Famous for the Drosselgasse, exceptional Riesling wines, medieval towers, and the Niederwald Monument.",
+    factsRu: "Всемирно известный винный город у южных ворот ущелья. Знаменит Дроссельгассе, рислингами и памятником Нидервальд.",
+    legend: "The ultimate celebration of Rhine wine culture, music, and romantic river voyages.",
+    legendRu: "Главный центр рейнской винной культуры, музыки и романтических речных путешествий.",
+    say: "The bustling wine capital at the southern end of the Rhine Gorge, famous for Drosselgasse.",
+    sayRu: "Оживленная винная столица на южном конце ущелья, знаменитая переулком Дроссельгассе."
+  },
+  {
+    id: "maeuseturm", lat: 49.9720141, lng: 7.8804018,
     name: "Mäuseturm (Mouse Tower)", town: "Bingen", pop: "~26,000",
     built: "Toll tower from 1298", builtRu: "Таможенная башня с 1298",
-    destroyed: "Destroyed by the French (1689)", destroyedRu: "Разрушен французами (1689)",
-    facts: "Small toll tower on a tiny island, rebuilt in 1855.",
-    factsRu: "Маленькая таможенная башня на островке, восстановлена в 1855 году.",
-    legend: "Cruel Bishop Hatto was hunted down and eaten alive by an army of mice right here. Historians say it's a pure legend; the name likely comes from 'Mautturm' (toll tower).",
-    legendRu: "Жестокого епископа Хатто здесь заживо съели мыши. Историки говорят, что это легенда, а название происходит от «Mautturm» (таможня)."
+    destroyed: "Destroyed 1689, rebuilt 1855", destroyedRu: "Разрушен в 1689, восстановлен в 1855",
+    facts: "A historic signal and toll tower on a tiny island near Bingen, rebuilt in the 19th century.",
+    factsRu: "Историческая сигнальная и таможенная башня на островке у Бингена, восстановленная в XIX веке.",
+    legend: "Bishop Hatto was allegedly devoured here by an army of mice. The name actually derives from 'Mautturm' (toll).",
+    legendRu: "Епископа Хатто якобы съели здесь мыши. Название же происходит от слова «Mautturm» (таможня).",
+    say: "The island tower of Bingen steeped in the legend of greedy Bishop Hatto.",
+    sayRu: "Островная башня Бингена, окутанная легендой о жадном епископе."
   },
   {
-    id: "hildegard", icon: "abbey", lat: 49.9924372, lng: 7.9283458,
+    id: "hildegard", lat: 49.9924372, lng: 7.9283458,
     name: "Abtei St. Hildegard", town: "Eibingen / Rüdesheim", pop: "—",
     built: "Founded 1165", builtRu: "Основан в 1165",
     destroyed: "—", destroyedRu: "—",
-    facts: "Benedictine convent. Hildegard von Bingen lived in the 1100s as a nun, writer, doctor, and composer.",
-    factsRu: "Бенедиктинский монастырь. Хильдегарда Бингенская жила здесь в XII веке как монахиня, писательница, врач и композитор.",
-    legend: "She reported divine visions since childhood and was named a Doctor of the Church in 2012.",
-    legendRu: "Она рассказывала о видениях с детства, а в 2012 году была объявлена Учителем Церкви."
-  },
-  {
-    id: "bromserburg", lat: 49.9776596, lng: 7.9177834,
-    name: "Bromserburg", town: "Rüdesheim am Rhein", pop: "~10,000",
-    built: "1210", builtRu: "1210 год",
-    destroyed: "—", destroyedRu: "—",
-    facts: "Oldest building in Rüdesheim, now a wine museum at the end of our castle route.",
-    factsRu: "Старейшее здание Рюдесхайма, ныне музей вина в конце нашего замкового маршрута."
+    facts: "Benedictine abbey overlooking the Rhine. Hildegard von Bingen lived here as a visionary mystic, composer, and physician.",
+    factsRu: "Бенедиктинское аббатство над Рейном. Хильдегарда Бингенская жила здесь как мистик, композитор и врач.",
+    legend: "Recognized globally as a Doctor of the Church for her profound theological and medical insights.",
+    legendRu: "Признана Учителем Церкви за глубокие богословские и медицинские труды.",
+    say: "A peaceful spiritual sanctuary founded by the brilliant medieval polymath.",
+    sayRu: "Мирная духовная обитель, основанная выдающейся средневековой мыслительницей."
   }
 ];
 
@@ -436,12 +533,12 @@ const routePlaces = [
   {
     title: "Koblenz — where two rivers meet", titleRu: "Кобленц — слияние двух рек",
     place: "Koblenz / Deutsches Eck",
-    text: "The journey begins at the confluence of the Rhine and Moselle. The name Koblenz goes back to Castellum apud Confluentes.",
-    textRu: "Путешествие начинается у слияния Рейна и Мозеля. Название Кобленц восходит к римскому Castellum apud Confluentes.",
-    extra: "The monument to Kaiser Wilhelm I was inaugurated in 1897, destroyed in 1945, and reconstructed in 1993.",
-    extraRu: "Памятник кайзеру Вильгельму I был открыт в 1897 году, разрушен в 1945-м и восстановлен в 1993-м.",
-    hook: "Two rivers, one strategic point — the gateway to the gorge.",
-    hookRu: "Две реки, одна стратегическая точка — врата в ущелье."
+    text: "The journey begins at the confluence of the Rhine and Moselle, starting from the rich history of Koblenz old town and Ehrenbreitstein fortress.",
+    textRu: "Путешествие начинается у слияния Рейна и Мозеля, стартуя с истории старого города Кобленца и крепости Эренбрайтштайн.",
+    extra: "An exceptional hub of history, culture, and guided tours in Rhineland-Palatinate.",
+    extraRu: "Важнейший центр истории, культуры и экскурсий в Рейнланд-Пфальце.",
+    hook: "Two rivers, grand fortresses and the gateway to the gorge.",
+    hookRu: "Две реки, грандиозные крепости и врата в ущелье."
   },
   {
     title: "Stolzenfels — Rhine Romanticism", titleRu: "Штольценфелс — рейнский романтизм",
@@ -454,75 +551,60 @@ const routePlaces = [
     hookRu: "Сказочная фантазия XIX века на средневековом фундаменте."
   },
   {
+    title: "Boppard and the Great Loop", titleRu: "Боппард и Великая Излучина",
+    place: "Boppard",
+    text: "Home to the Bopparder Hamm, showcasing the most sweeping river bend and steep terraced vineyards.",
+    textRu: "Здесь находится Боппардский амфитеатр — самый живописный речной изгиб и крутые террасные виноградники.",
+    extra: "A perfect stop for wine tasting, Roman heritage, and chairlift viewpoints.",
+    extraRu: "Идеальная остановка для дегустации вина и панорамных видов.",
+    hook: "Where the Rhine bends gracefully around ancient slopes.",
+    hookRu: "Где Рейн изящно огибает древние склоны."
+  },
+  {
     title: "Loreley — a rock, a legend and a stage", titleRu: "Лорелей — скала, легенда и сцена",
     place: "Loreley / St. Goarshausen",
-    text: "The 132-meter slate cliff sits at the narrowest point of the Rhine. Currents and a small waterfall created a murmuring sound ('lureln').",
-    textRu: "Сланцевая скала высотой 132 метра стоит в самом узком месте Рейна. Течение и водопад создавали глухой гул.",
-    extra: "In 1801, Clemens Brentano invented the legend; Heinrich Heine made her world-famous in 1824.",
-    extraRu: "В 1801 году Клеменс Брентано придумал легенду, а в 1824 году Генрих Гейне прославил её на весь мир.",
+    text: "The 132-meter slate cliff sits at the narrowest point of the Rhine, inspiring Heinrich Heine's immortal poem.",
+    textRu: "Сланцевая скала высотой 132 метра в узком месте Рейна, вдохновившая бессмертную поэму Генриха Гейне.",
+    extra: "Strong currents and echoes created legends of the golden-haired siren.",
+    extraRu: "Сильное течение и эхо породили легенды о златокудрой сирене.",
     hook: "A 200-year-old poem that became an immortal river legend.",
     hookRu: "Поэма двухсотлетней давности, ставшая бессмертной речной легендой."
   },
   {
-    title: "Bacharach — Victor Hugo's ancient town", titleRu: "Бахарах — древний город Виктора Гюго",
-    place: "Bacharach",
-    text: "Named after Bacchus, Roman god of wine. In 1839, Victor Hugo called it the most ancient heap of human dwellings he had ever seen.",
-    textRu: "Назван в честь Вакха. В 1839 году Виктор Гюго назвал его самым древним скоплением человеческих жилищ.",
-    extra: "Population dropped from 6,000 in the 15th century to under 2,000 today after wars and plagues.",
-    extraRu: "Население упало с 6 000 в XV веке до менее чем 2 000 сегодня из-за войн и чумы.",
-    hook: "A medieval wine town preserved in time.",
-    hookRu: "Средневековый винный городок, застывший во времени."
-  },
-  {
-    title: "The vanishing vineyards", titleRu: "Исчезающие виноградники",
-    place: "Mittelrhein region",
-    text: "Vineyards covered 2,200 hectares in 1900; today only about 460 hectares remain due to steep slopes and difficult hand-farming.",
-    textRu: "В 1900 году виноградники занимали 2 200 га; сегодня осталось около 460 га из-за крутых склонов и тяжёлого ручного труда.",
-    extra: "Wine businesses dropped from 490 in 1989 to ~165 today, mostly under 10 hectares.",
-    extraRu: "Количество винодельческих хозяйств сократилось с 490 в 1989 году до ~165 сегодня.",
-    hook: "Steep slopes, hard work and a landscape shaped by wine.",
-    hookRu: "Крутые склоны, тяжёлый труд и ландшафт, созданный вином."
-  },
-  {
-    title: "Bingen and the Mäuseturm", titleRu: "Бинген и Мышиная башня",
-    place: "Bingen",
-    text: "Gateway where the Nahe meets the Rhine. The Mäuseturm was a real 13th-century toll tower (Mautturm), later linked to the legend of Bishop Hatto.",
-    textRu: "Ворота, где Наэ встречается с Рейном. Mäuseturm была таможенной башней (Mautturm) XIII века, обросшей легендами.",
-    extra: "The mice are legend; the river tolls and the strategic gateway were very real.",
-    extraRu: "Мыши — это легенда, а речные пошлины и стратегические ворота были вполне реальными.",
-    hook: "Tolls, towers and tales of greedy bishops.",
-    hookRu: "Пошлины, башни и сказки о жадных епископах."
+    title: "Bacharach and Rüdesheim", titleRu: "Бахарах и Рюдесхайм",
+    place: "Southern Gorge",
+    text: "Historic wine towns featuring half-timbered architecture, ancient ramparts, and vibrant wine taverns.",
+    textRu: "Исторические винные города с фахверковой архитектурой, древними стенами и уютными тавернами.",
+    extra: "The vibrant southern bookends of the Middle Rhine UNESCO heritage route.",
+    extraRu: "Яркие южные ворота маршрута Всемирного наследия ЮНЕСКО.",
+    hook: "Timeless wine culture preserved along the riverbanks.",
+    hookRu: "Вечная винная культура, сохраненная на берегах реки."
   }
 ];
 
-const ICONS = {
-  castle: '<svg viewBox="0 0 24 24" fill="none" stroke="#B5602E" stroke-width="1.8"><path d="M3 21h18M4 21V10h3V7h2v3h2V5h2v5h2V7h2v3h3v11" stroke-linecap="round" stroke-linejoin="round"/><rect x="10" y="14" width="4" height="7" fill="#B5602E" stroke="none"/></svg>',
-  tower: '<svg viewBox="0 0 24 24" fill="none" stroke="#B5602E" stroke-width="1.8"><path d="M9 21V9h6v12M8 9l1-4h6l1 4M7 21h10" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-  rock: '<svg viewBox="0 0 24 24" fill="none" stroke="#B5602E" stroke-width="1.8"><path d="M3 21l3-9 3 4 2-6 3 5 2-3 5 9H3z" stroke-linejoin="round"/></svg>',
-  abbey: '<svg viewBox="0 0 24 24" fill="none" stroke="#B5602E" stroke-width="1.8"><path d="M4 21V11l8-6 8 6v10M4 21h16M9 21v-6h6v6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 5V2M10.5 3.5h3" stroke-linecap="round"/></svg>'
-};
-
 const UI = {
   en: {
-    tabs: ['Guide', 'Castles', 'Map', 'Legends', 'Info', 'Route'],
-    stationLabel: (n, t) => `Station ${n} of ${t}`,
+    tabs: ['Guide', 'Locations', 'Map', 'Legends', 'Info', 'Route'],
+    stationLabel: (n, t) => `Location ${n} of ${t}`,
     built: 'Built', town: 'Town', play: 'Listen', check: 'Visited',
     story: 'Historical Facts', legend: 'Legend & Lore'
   },
   ru: {
-    tabs: ['Гид', 'Замки', 'Карта', 'Легенды', 'Инфо', 'Маршрут'],
-    stationLabel: (n, t) => `Остановка ${n} из ${t}`,
+    tabs: ['Гид', 'Точки', 'Карта', 'Легенды', 'Инфо', 'Маршрут'],
+    stationLabel: (n, t) => `Точка ${n} из ${t}`,
     built: 'Построен', town: 'Город', play: 'Слушать', check: 'Посещено',
     story: 'Исторические факты', legend: 'Легенды и предания'
   }
 };
 
 let lang = 'en';
-let index = 2; // Marksburg по умолчанию
+let index = 0;
 let scale = 1.0;
 const visited = new Set();
 let leafletMap = null;
 let selectedIndex = -1;
+let currentPhotoIdx = 0;
+let castlePhotos = [];
 
 function renderTabs() {
   const tabsEl = document.getElementById('tabs');
@@ -555,52 +637,11 @@ function renderGuide() {
   const s = castles[index];
   const t = UI[lang];
   
-function renderGuide() {
-  const s = castles[index];
-  const t = UI[lang];
-  
-  // Вывод картинки .jpg с фоновым резервным SVG на случай отсутствия файла
-  const photoContainer = document.getElementById('photoContainer');
-  if (photoContainer) {
-    photoContainer.innerHTML = `
-      <img src="${s.id}.jpg" alt="${s.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:100%; height:100%; object-fit:cover; position:absolute; inset:0;">
-      <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">
-        ${ICONS[s.icon || 'castle']}
-      </div>
-      <div class="badge" id="badge">${t.stationLabel(index + 1, castles.length)}</div>
-    `;
-  }
+  // Поддержка галереи карусели: если есть массив images, берем его, иначе [id.jpg]
+  castlePhotos = (s.images && s.images.length > 0) ? s.images : [`${s.id}.jpg`];
+  currentPhotoIdx = 0;
+  updateActivePhoto();
 
-  document.getElementById('stationTitle').textContent = s.name;
-  document.getElementById('stationDesc').textContent = lang === 'ru' ? (s.sayRu || s.factsRu) : (s.say || s.facts);
-  
-  document.getElementById('statTownLabel').textContent = t.town;
-  document.getElementById('statTown').textContent = s.town;
-  document.getElementById('statBuiltLabel').textContent = t.built;
-  document.getElementById('statBuilt').textContent = lang === 'ru' ? s.builtRu : s.built;
-
-  document.getElementById('storyTitle').textContent = t.story;
-  document.getElementById('stationFacts').textContent = lang === 'ru' ? s.factsRu : s.facts;
-
-  const legendBox = document.getElementById('legendContainer');
-  const legendTxt = lang === 'ru' ? s.legendRu : s.legend;
-  if (legendTxt) {
-    legendBox.style.display = 'block';
-    document.getElementById('legendTitle').textContent = t.legend;
-    document.getElementById('stationLegend').textContent = legendTxt;
-  } else {
-    legendBox.style.display = 'none';
-  }
-
-  document.getElementById('playLabel').textContent = t.play;
-  document.getElementById('checkBtn').classList.toggle('done', visited.has(s.id));
-  document.getElementById('progressFill').style.width = ((index + 1) / castles.length * 100) + '%';
-  document.getElementById('progressLabel').textContent = `${index + 1} / ${castles.length}`;
-  document.getElementById('prevBtn').disabled = index === 0;
-  document.getElementById('nextBtn').disabled = index === castles.length - 1;
-  renderTabs();
-  document.documentElement.style.setProperty('--scale', scale);
-}
   document.getElementById('badge').textContent = t.stationLabel(index + 1, castles.length);
   document.getElementById('stationTitle').textContent = s.name;
   document.getElementById('stationDesc').textContent = lang === 'ru' ? (s.sayRu || s.factsRu) : (s.say || s.facts);
@@ -631,6 +672,31 @@ function renderGuide() {
   document.getElementById('nextBtn').disabled = index === castles.length - 1;
   renderTabs();
   document.documentElement.style.setProperty('--scale', scale);
+}
+
+function updateActivePhoto() {
+  const imgEl = document.getElementById('mainPhoto');
+  const dotsEl = document.getElementById('photoDots');
+  
+  if (imgEl && castlePhotos.length > 0) {
+    imgEl.src = castlePhotos[currentPhotoIdx];
+  }
+
+  if (dotsEl) {
+    if (castlePhotos.length > 1) {
+      dotsEl.style.display = 'flex';
+      dotsEl.innerHTML = castlePhotos.map((_, idx) => `
+        <div class="dot ${idx === currentPhotoIdx ? 'active' : ''}" onclick="setPhoto(${idx})"></div>
+      `).join('');
+    } else {
+      dotsEl.style.display = 'none';
+    }
+  }
+}
+
+function setPhoto(idx) {
+  currentPhotoIdx = idx;
+  updateActivePhoto();
 }
 
 function renderCastlesList() {
@@ -680,7 +746,6 @@ function renderInfo() {
         <tr><td>Braubach</td><td>~3,000</td></tr>
         <tr><td>Boppard</td><td>~15,500</td></tr>
         <tr><td>St. Goar</td><td>~2,900</td></tr>
-        <tr><td>Oberwesel</td><td>~2,900</td></tr>
         <tr><td>Bacharach</td><td>~1,850</td></tr>
         <tr><td>Bingen</td><td>~26,000</td></tr>
         <tr><td>Rüdesheim</td><td>~10,000</td></tr>
@@ -699,7 +764,7 @@ function initMap() {
     return;
   }
 
-  leafletMap = L.map('mapDiv', { scrollWheelZoom: true }).setView([50.08, 7.75], 10);
+  leafletMap = L.map('mapDiv', { scrollWheelZoom: true }).setView([50.18, 7.75], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(leafletMap);
   
   const points = [];
@@ -785,15 +850,38 @@ document.querySelectorAll('.pill-btn[data-lang]').forEach(btn => {
 document.getElementById('fontMinus').addEventListener('click', () => { scale = Math.max(0.85, scale - 0.1); renderGuide(); });
 document.getElementById('fontPlus').addEventListener('click', () => { scale = Math.min(1.3, scale + 0.1); renderGuide(); });
 
-// Синтез речи (Озвучка для гида)
+// Синтез речи (Озвучка с кнопкой Stop / Отмена)
+let isSpeaking = false;
 document.getElementById('playBtn').addEventListener('click', () => {
   if (!('speechSynthesis' in window)) return;
+  const playLabel = document.getElementById('playLabel');
+
+  if (window.speechSynthesis.speaking || isSpeaking) {
+    window.speechSynthesis.cancel();
+    isSpeaking = false;
+    playLabel.textContent = UI[lang].play;
+    return;
+  }
+
   window.speechSynthesis.cancel();
   const c = castles[index];
   const text = (lang === 'ru' ? (c.factsRu + '. ' + (c.legendRu || '')) : (c.facts + '. ' + (c.legend || '')));
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang === 'ru' ? 'ru-RU' : 'en-US';
   utterance.rate = 0.9;
+
+  isSpeaking = true;
+  playLabel.textContent = lang === 'ru' ? 'Стоп' : 'Stop';
+
+  utterance.onend = () => {
+    isSpeaking = false;
+    playLabel.textContent = UI[lang].play;
+  };
+  utterance.onerror = () => {
+    isSpeaking = false;
+    playLabel.textContent = UI[lang].play;
+  };
+
   window.speechSynthesis.speak(utterance);
 });
 
