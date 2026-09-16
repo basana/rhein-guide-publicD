@@ -289,7 +289,7 @@
 const castles = [
   {
     id: "koblenz_altstadt", lat: 50.3600, lng: 7.5978,
-    images: ["koblenz_altstadt.jpg", "koblenz_altstadt_2.jpg"],
+    images: ["koblenz_altstadt.jpg", "koblenz_altstadt_2.jpg", "koblenz_altstadt_4.jpg"],
     name: "Koblenz Old Town & Deutsches Eck", town: "Koblenz", pop: "~114,000",
     built: "Roman origins / Deutsches Eck 1897", builtRu: "Римское основание / Дез.-Экк 1897",
     destroyed: "Damaged in WWII, restored", destroyedRu: "Поврежден в ВОВ, восстановлен",
@@ -635,14 +635,51 @@ function switchView(viewName) {
   }
 }
 
+// Проверяет, существует ли файл, реально пытаясь его загрузить
+function photoExists(src) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = src;
+  });
+}
+
+// Ищет id.jpg, id_2.jpg, id_3.jpg... пока файлы существуют (максимум 8), без правок кода
+async function detectPhotos(id) {
+  const found = [];
+  const first = `${id}.jpg`;
+  if (await photoExists(first)) found.push(first);
+  for (let n = 2; n <= 8; n++) {
+    const name = `${id}_${n}.jpg`;
+    if (await photoExists(name)) {
+      found.push(name);
+    } else {
+      break; // как только номер не найден, дальше не ищем — предполагаем, что нумерация без пропусков
+    }
+  }
+  return found.length > 0 ? found : [first]; // если вообще ничего не нашли, всё равно покажем id.jpg (даже если он тоже отсутствует)
+}
+
 function renderGuide() {
   const s = castles[index];
   const t = UI[lang];
   
-  // Собираем массив картинок: если в объекте задан массив images, берем его, иначе [id.jpg]
-  castlePhotos = (s.images && s.images.length > 0) ? s.images : [`${s.id}.jpg`];
-  currentPhotoIdx = 0;
-  updateActivePhoto();
+  // Картинки: если задан ручной массив images — используем его (для контроля порядка/исключений).
+  // Иначе автоматически определяем, какие файлы id.jpg, id_2.jpg, id_3.jpg... реально существуют.
+  if (s.images && s.images.length > 0) {
+    castlePhotos = s.images;
+    currentPhotoIdx = 0;
+    updateActivePhoto();
+  } else {
+    detectPhotos(s.id).then(found => {
+      // Если пользователь уже успел перейти на другую станцию, пока шла проверка — не применяем устаревший результат
+      if (castles[index].id !== s.id) return;
+      castlePhotos = found;
+      currentPhotoIdx = 0;
+      updateActivePhoto();
+    });
+  }
 
   document.getElementById('badge').textContent = t.stationLabel(index + 1, castles.length);
   document.getElementById('stationTitle').textContent = s.name;
