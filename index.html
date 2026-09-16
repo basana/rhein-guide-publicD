@@ -79,6 +79,9 @@
     position: relative; width: 100%; aspect-ratio: 1 / 1;
     margin: 4px 0 18px; border-radius: 14px; overflow: hidden;
     background: #E8D9B5; border: 1px solid var(--gold);
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
   }
   .photo img {
     width: 100%; height: 100%; object-fit: cover; display: block;
@@ -194,14 +197,6 @@
   .progress-track { flex: 1; height: 6px; background: var(--parchment-deep); border-radius: 3px; overflow: hidden; border: 1px solid var(--gold); }
   .progress-fill { height: 100%; background: var(--terracotta); width: 0%; }
   .progress-label { font-size: 11px; color: var(--ink-soft); white-space: nowrap; font-weight: 600; }
-  .photo {
-    position: relative; width: 100%; aspect-ratio: 1 / 1;
-    margin: 4px 0 18px; border-radius: 14px; overflow: hidden;
-    background: #E8D9B5; border: 1px solid var(--gold);
-    touch-action: pan-y; /* Разрешаем вертикальный скролл страницы, а горизонтальный забираем под свайпы фото */
-    user-select: none;
-    -webkit-user-select: none;
-  }
 </style>
 </head>
 <body>
@@ -321,7 +316,8 @@ const castles = [
     sayRu: "Громадная крепость на скале с видом на слияние двух рек."
   },
   {
-   images: ["stolzenfels.jpg", "stolzenfels_2.jpg", "stolzenfels_3.jpg"], // Ваши файлы карусели
+    id: "stolzenfels", 
+    images: ["stolzenfels.jpg", "stolzenfels_2.jpg", "stolzenfels_3.jpg"],
     lat: 50.3031061, lng: 7.5921284,
     name: "Schloss Stolzenfels", town: "Koblenz", pop: "~114,000",
     built: "13th c. (rebuilt 1836–42)", builtRu: "XIII век (перестроен в 1836–42)",
@@ -643,52 +639,14 @@ function switchView(viewName) {
   }
 }
 
-// Проверяет, существует ли файл, реально пытаясь его загрузить
-function photoExists(src) {
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
-    img.src = src;
-  });
-}
-
-// Ищет id.jpg, id_2.jpg, id_3.jpg... пока файлы существуют (без ручных правок кода)
-async function detectPhotos(id) {
-  const found = [];
-  const first = `${id}.jpg`;
-  if (await photoExists(first)) found.push(first);
-  const MAX_PHOTOS = 30; // с запасом на будущее — при таком количестве фото на одну станцию править код всё равно не понадобится
-  for (let n = 2; n <= MAX_PHOTOS; n++) {
-    const name = `${id}_${n}.jpg`;
-    if (await photoExists(name)) {
-      found.push(name);
-    } else {
-      break; // как только номер не найден, дальше не ищем — предполагаем, что нумерация без пропусков
-    }
-  }
-  return found.length > 0 ? found : [first]; // если вообще ничего не нашли, всё равно покажем id.jpg (даже если он тоже отсутствует)
-}
-
 function renderGuide() {
   const s = castles[index];
   const t = UI[lang];
   
-  // Картинки: если задан ручной массив images — используем его (для контроля порядка/исключений).
-  // Иначе автоматически определяем, какие файлы id.jpg, id_2.jpg, id_3.jpg... реально существуют.
-  if (s.images && s.images.length > 0) {
-    castlePhotos = s.images;
-    currentPhotoIdx = 0;
-    updateActivePhoto();
-  } else {
-    detectPhotos(s.id).then(found => {
-      // Если пользователь уже успел перейти на другую станцию, пока шла проверка — не применяем устаревший результат
-      if (castles[index].id !== s.id) return;
-      castlePhotos = found;
-      currentPhotoIdx = 0;
-      updateActivePhoto();
-    });
-  }
+  // Прямое чтение массива images из объекта данных
+  castlePhotos = (s.images && s.images.length > 0) ? s.images : [`${s.id}.jpg`];
+  currentPhotoIdx = 0;
+  updateActivePhoto();
 
   document.getElementById('badge').textContent = t.stationLabel(index + 1, castles.length);
   document.getElementById('stationTitle').textContent = s.name;
@@ -742,6 +700,7 @@ function updateActivePhoto() {
     }
   }
 }
+
 // Обработка свайпов пальцем (Touch Gestures) для галереи фото
 let touchStartX = 0;
 let touchEndX = 0;
@@ -761,22 +720,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function handleSwipe() {
-  const swipeThreshold = 50; // Минимальная длина свайпа в пикселях для срабатывания
+  const swipeThreshold = 50;
   if (touchStartX - touchEndX > swipeThreshold) {
-    // Свайп влево -> следующий слайд
     if (currentPhotoIdx < castlePhotos.length - 1) {
       currentPhotoIdx++;
       updateActivePhoto();
     }
   }
   if (touchEndX - touchStartX > swipeThreshold) {
-    // Свайп вправо -> предыдущий слайд
     if (currentPhotoIdx > 0) {
       currentPhotoIdx--;
       updateActivePhoto();
     }
   }
 }
+
 function setPhoto(idx) {
   currentPhotoIdx = idx;
   updateActivePhoto();
@@ -851,11 +809,7 @@ function initMap() {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(leafletMap);
   
   const points = [];
-  // Города-станции получают простую точку; всё остальное (замки, крепости, аббатство, башня) — иконку замка,
-  // чтобы быть заметными на карте даже до приближения (на телефоне hover всё равно не работает, поэтому иконка видна сразу, а не только при наведении)
   const TOWN_IDS = new Set(['koblenz_altstadt', 'braubach', 'boppard', 'bacharach', 'ruedesheim']);
-  // Марксбург и Браубах стоят почти в одной точке на карте и накладываются друг на друга при обычном масштабе —
-  // немного разносим маркер Марксбурга в сторону, чтобы оба были видны без приближения (сам текст/факты используют настоящие координаты, это только сдвиг точки на карте)
   const MAP_OFFSETS = { marksburg: [0.0035, 0.0030] };
 
   const castleIcon = L.divIcon({
@@ -866,7 +820,7 @@ function initMap() {
 
   castles.forEach((c, i) => {
     if (typeof c.lat !== 'number') return;
-    points.push([c.lat, c.lng]); // маршрут-линия идёт по настоящим координатам, без сдвига
+    points.push([c.lat, c.lng]);
     const offset = MAP_OFFSETS[c.id] || [0, 0];
     const markerLat = c.lat + offset[0];
     const markerLng = c.lng + offset[1];
@@ -1005,4 +959,3 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
-
