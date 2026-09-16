@@ -100,13 +100,17 @@
     display: flex; justify-content: center; gap: 6px; z-index: 10;
     pointer-events: none;
   }
-  .dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: rgba(246, 238, 221, 0.7); border: 1px solid var(--gold);
+ .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: rgba(246, 238, 221, 0.7); border: 1.5px solid var(--gold);
     cursor: pointer; pointer-events: auto; transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(90, 67, 39, 0.4);
+    /* Добавляем комфортную зону клика вокруг точки, чтобы палец легко попадал */
+    padding: 6px;
+    background-clip: content-box; 
   }
   .dot.active {
-    background: var(--terracotta); border-color: var(--cream-text); transform: scale(1.25);
+    background: var(--terracotta); border-color: var(--cream-text); transform: scale(1.2);
   }
 
   .station-title {
