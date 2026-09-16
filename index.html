@@ -289,6 +289,7 @@
 const castles = [
   {
     id: "koblenz_altstadt", lat: 50.3600, lng: 7.5978,
+    images: ["koblenz_altstadt.jpg", "koblenz_altstadt_2.jpg"],
     name: "Koblenz Old Town & Deutsches Eck", town: "Koblenz", pop: "~114,000",
     built: "Roman origins / Deutsches Eck 1897", builtRu: "Римское основание / Дез.-Экк 1897",
     destroyed: "Damaged in WWII, restored", destroyedRu: "Поврежден в ВОВ, восстановлен",
@@ -312,7 +313,8 @@ const castles = [
     sayRu: "Громадная крепость на скале с видом на слияние двух рек."
   },
   {
-    id: "stolzenfels", lat: 50.3031061, lng: 7.5921284,
+   images: ["stolzenfels.jpg", "stolzenfels_2.jpg", "stolzenfels_3.jpg"], // Ваши файлы карусели
+    lat: 50.3031061, lng: 7.5921284,
     name: "Schloss Stolzenfels", town: "Koblenz", pop: "~114,000",
     built: "13th c. (rebuilt 1836–42)", builtRu: "XIII век (перестроен в 1836–42)",
     destroyed: "Destroyed by the French", destroyedRu: "Разрушен французами",
@@ -637,7 +639,7 @@ function renderGuide() {
   const s = castles[index];
   const t = UI[lang];
   
-  // Поддержка галереи карусели: если есть массив images, берем его, иначе [id.jpg]
+  // Собираем массив картинок: если в объекте задан массив images, берем его, иначе [id.jpg]
   castlePhotos = (s.images && s.images.length > 0) ? s.images : [`${s.id}.jpg`];
   currentPhotoIdx = 0;
   updateActivePhoto();
@@ -674,6 +676,7 @@ function renderGuide() {
   document.documentElement.style.setProperty('--scale', scale);
 }
 
+// Функции управления каруселью (точки поверх фото)
 function updateActivePhoto() {
   const imgEl = document.getElementById('mainPhoto');
   const dotsEl = document.getElementById('photoDots');
@@ -900,3 +903,4 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
+
