@@ -645,12 +645,13 @@ function photoExists(src) {
   });
 }
 
-// Ищет id.jpg, id_2.jpg, id_3.jpg... пока файлы существуют (максимум 8), без правок кода
+// Ищет id.jpg, id_2.jpg, id_3.jpg... пока файлы существуют (без ручных правок кода)
 async function detectPhotos(id) {
   const found = [];
   const first = `${id}.jpg`;
   if (await photoExists(first)) found.push(first);
-  for (let n = 2; n <= 8; n++) {
+  const MAX_PHOTOS = 30; // с запасом на будущее — при таком количестве фото на одну станцию править код всё равно не понадобится
+  for (let n = 2; n <= MAX_PHOTOS; n++) {
     const name = `${id}_${n}.jpg`;
     if (await photoExists(name)) {
       found.push(name);
@@ -808,13 +809,35 @@ function initMap() {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(leafletMap);
   
   const points = [];
+  // Города-станции получают простую точку; всё остальное (замки, крепости, аббатство, башня) — иконку замка,
+  // чтобы быть заметными на карте даже до приближения (на телефоне hover всё равно не работает, поэтому иконка видна сразу, а не только при наведении)
+  const TOWN_IDS = new Set(['koblenz_altstadt', 'braubach', 'boppard', 'bacharach', 'ruedesheim']);
+  // Марксбург и Браубах стоят почти в одной точке на карте и накладываются друг на друга при обычном масштабе —
+  // немного разносим маркер Марксбурга в сторону, чтобы оба были видны без приближения (сам текст/факты используют настоящие координаты, это только сдвиг точки на карте)
+  const MAP_OFFSETS = { marksburg: [0.0035, 0.0030] };
+
+  const castleIcon = L.divIcon({
+    className: '',
+    html: '<div style="background:#B5602E; color:#FCEFDD; width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; font-size:14px;">🏰</div>',
+    iconSize: [26, 26], iconAnchor: [13, 13]
+  });
+
   castles.forEach((c, i) => {
     if (typeof c.lat !== 'number') return;
-    points.push([c.lat, c.lng]);
-    const marker = L.circleMarker([c.lat, c.lng], {
-      radius: 10, color: '#fff', weight: 2, fillColor: '#B5602E', fillOpacity: 1
-    }).addTo(leafletMap);
-    
+    points.push([c.lat, c.lng]); // маршрут-линия идёт по настоящим координатам, без сдвига
+    const offset = MAP_OFFSETS[c.id] || [0, 0];
+    const markerLat = c.lat + offset[0];
+    const markerLng = c.lng + offset[1];
+
+    let marker;
+    if (TOWN_IDS.has(c.id)) {
+      marker = L.circleMarker([markerLat, markerLng], {
+        radius: 7, color: '#fff', weight: 2, fillColor: '#8A6A34', fillOpacity: 1
+      }).addTo(leafletMap);
+    } else {
+      marker = L.marker([markerLat, markerLng], { icon: castleIcon }).addTo(leafletMap);
+    }
+
     marker.on('click', () => {
       selectedIndex = i;
       showMapPanel(i);
