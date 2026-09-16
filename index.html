@@ -194,6 +194,14 @@
   .progress-track { flex: 1; height: 6px; background: var(--parchment-deep); border-radius: 3px; overflow: hidden; border: 1px solid var(--gold); }
   .progress-fill { height: 100%; background: var(--terracotta); width: 0%; }
   .progress-label { font-size: 11px; color: var(--ink-soft); white-space: nowrap; font-weight: 600; }
+  .photo {
+    position: relative; width: 100%; aspect-ratio: 1 / 1;
+    margin: 4px 0 18px; border-radius: 14px; overflow: hidden;
+    background: #E8D9B5; border: 1px solid var(--gold);
+    touch-action: pan-y; /* Разрешаем вертикальный скролл страницы, а горизонтальный забираем под свайпы фото */
+    user-select: none;
+    -webkit-user-select: none;
+  }
 </style>
 </head>
 <body>
@@ -734,7 +742,41 @@ function updateActivePhoto() {
     }
   }
 }
+// Обработка свайпов пальцем (Touch Gestures) для галереи фото
+let touchStartX = 0;
+let touchEndX = 0;
 
+document.addEventListener('DOMContentLoaded', () => {
+  const photoEl = document.querySelector('.photo');
+  if (!photoEl) return;
+
+  photoEl.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  photoEl.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }, { passive: true });
+});
+
+function handleSwipe() {
+  const swipeThreshold = 50; // Минимальная длина свайпа в пикселях для срабатывания
+  if (touchStartX - touchEndX > swipeThreshold) {
+    // Свайп влево -> следующий слайд
+    if (currentPhotoIdx < castlePhotos.length - 1) {
+      currentPhotoIdx++;
+      updateActivePhoto();
+    }
+  }
+  if (touchEndX - touchStartX > swipeThreshold) {
+    // Свайп вправо -> предыдущий слайд
+    if (currentPhotoIdx > 0) {
+      currentPhotoIdx--;
+      updateActivePhoto();
+    }
+  }
+}
 function setPhoto(idx) {
   currentPhotoIdx = idx;
   updateActivePhoto();
