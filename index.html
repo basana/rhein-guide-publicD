@@ -228,23 +228,6 @@
   .progress-track { flex: 1; height: 6px; background: var(--parchment-deep); border-radius: 3px; overflow: hidden; border: 1px solid var(--gold); }
   .progress-fill { height: 100%; background: var(--terracotta); width: 0%; }
   .progress-label { font-size: 11px; color: var(--ink-soft); white-space: nowrap; font-weight: 600; }
-  
-/* Фоновый водяной знак с вашей оригинальной эмблемой */
-.app::after {
-  content: "";
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 260px;
-  height: 260px;
-  background-image: url('my-original-stamp.png'); /* Ваша тонкая эмблема-штемпель */
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  opacity: 0.05; /* Легчайший винтажный оттиск */
-  pointer-events: none;
-  z-index: 0;
-}
 </style>
 </head>
 <body>
@@ -504,15 +487,27 @@ const castles = [
   },
   {
     id: "bacharach", lat: 50.0581089, lng: 7.7657011,
-    name: "Bacharach & Burg Stahleck", town: "Bacharach", pop: "~1,850",
-    built: "Town 12th c. / Castle 12th c.", builtRu: "Город XII в. / Замок Штальек XII в.",
-    destroyed: "Destroyed by French 1689", destroyedRu: "Разрушен французами в 1689",
-    facts: "Bacharach is one of the best-preserved medieval wine towns on the Rhine, celebrated by Victor Hugo. Overlooking it is Burg Stahleck, built in the 12th century and now serving as a popular youth hostel.",
-    factsRu: "Бахарах — один из лучше всего сохранившихся средневековых винных городов на Рейне, воспетый Виктором Гюго. Над ним возвышается замок Штальек (XII век), ныне молодежная турбаза.",
+    name: "Bacharach", town: "Bacharach", pop: "~1,850",
+    built: "12th century town walls", builtRu: "Городские стены XII века",
+    destroyed: "Town burned by the French 1689", destroyedRu: "Город сожжён французами в 1689",
+    facts: "Bacharach is one of the best-preserved medieval wine towns on the Rhine, celebrated by Victor Hugo. Half-timbered houses, old town gates, and centuries-old wine taverns line its narrow streets.",
+    factsRu: "Бахарах — один из лучше всего сохранившихся средневековых винных городов на Рейне, воспетый Виктором Гюго. Фахверковые дома, старинные городские ворота и старинные винные погребки украшают его узкие улочки.",
     legend: "Named after Bacchus, the Roman god of wine, owing to its centuries-old steep hillside vineyards.",
     legendRu: "Назван в честь Вакха, римского бога вина, благодаря своим древним виноградникам на склонах.",
-    say: "A quintessential medieval wine town overlooked by historic Burg Stahleck.",
-    sayRu: "Изумительный средневековый винный городок под взором исторического замка Штальек."
+    say: "A quintessential medieval wine town on the Rhine.",
+    sayRu: "Изумительный средневековый винный городок на Рейне."
+  },
+  {
+    id: "stahleck", lat: 50.0581089, lng: 7.7657011,
+    name: "Burg Stahleck", town: "Bacharach", pop: "~1,850",
+    built: "12th century (rebuilt 1925–38)", builtRu: "XII век (восстановлен в 1925–38)",
+    destroyed: "Blown up by the French 1689", destroyedRu: "Взорван французами в 1689",
+    facts: "Perched on a crag 160 meters above the Rhine, Burg Stahleck was the seat of the Counts Palatine of the Rhine. Destroyed by the French in 1689, it was rebuilt in the 1920s–30s and today serves as a popular youth hostel.",
+    factsRu: "Возвышаясь на скале в 160 метрах над Рейном, замок Штальек был резиденцией пфальцграфов Рейнских. Разрушен французами в 1689 году, восстановлен в 1920–30-х и сегодня служит популярной молодёжной турбазой.",
+    legend: "Its name means 'impregnable castle on a crag' — though that didn't stop the French in 1689.",
+    legendRu: "Название означает «неприступный замок на скале» — что не помешало французам в 1689 году.",
+    say: "A hilltop castle-turned-youth-hostel with sweeping views over Bacharach.",
+    sayRu: "Замок на вершине холма, ныне молодёжная турбаза с видом на Бахарах."
   },
   {
     id: "sooneck", lat: 50.019453, lng: 7.8248973,
@@ -868,12 +863,17 @@ function initMap() {
   
   const points = [];
   const TOWN_IDS = new Set(['koblenz_altstadt', 'braubach', 'boppard', 'bacharach', 'ruedesheim']);
-  const MAP_OFFSETS = { marksburg: [0.0035, 0.0030] };
+  const MAP_OFFSETS = {
+    marksburg: [0.0035, 0.0030],
+    ehrenbreitstein: [0.0045, 0.0035],
+    stahleck: [0.0045, -0.0035]
+  };
 
-  const castleIcon = L.divIcon({
-    className: '',
-    html: '<div style="background:#B5602E; color:#FCEFDD; width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; font-size:14px;">🏰</div>',
-    iconSize: [26, 26], iconAnchor: [13, 13]
+  const castleIcon = L.icon({
+    iconUrl: 'new-vector-castle.png',
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+    popupAnchor: [0, -19]
   });
 
   castles.forEach((c, i) => {
@@ -1027,44 +1027,6 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
-</script>
-  <!-- Интеграция кастомной иконки замка -->
-<!-- Интеграция кастомной иконки замка -->
-<script>
-  document.addEventListener("DOMContentLoaded", function() {
-    // 1. Создаем внешний вид иконки
-    const customCastleIcon = L.divIcon({
-      className: 'custom-castle-pin',
-      html: `
-        <div style="
-          background: var(--terracotta);
-          border: 2px solid #fff;
-          border-radius: 50%;
-          width: 48px;
-          height: 48px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-          overflow: hidden;
-          padding: 3px;
-        ">
-          <img src="new-vector-castle.png" style="width: 100%; height: 100%; object-fit: contain; filter: invert(1);">
-        </div>
-      `,
-      iconSize: [48, 48],
-      iconAnchor: [24, 24]
-    });
-
-    // 2. Применяем иконку ко всем меткам замков на карте
-    if (typeof castles !== 'undefined' && typeof leafletMap !== 'undefined') {
-      castles.forEach((c) => {
-        if (c.lat && c.lng) {
-          L.marker([c.lat, c.lng], { icon: customCastleIcon }).addTo(leafletMap);
-        }
-      });
-    }
-  });
 </script>
 </body>
 </html>
