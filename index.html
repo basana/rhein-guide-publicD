@@ -1,33 +1,4 @@
-function showMapPanel(i) {
-  const c = castles[i];
-  const panel = document.getElementById('mapPanel');
-  if (!panel) return;
-
-  document.getElementById('mapPanelTitle').textContent = c.name;
-  document.getElementById('mapPanelMeta').textContent =
-    `${c.town}${c.pop && c.pop !== '—' ? ' · ' + c.pop : ''} • ${lang === 'ru' ? c.builtRu : c.built}`;
-  document.getElementById('mapPanelDesc').textContent =
-    lang === 'ru' ? (c.sayRu || c.factsRu) : (c.say || c.facts);
-
-  panel.classList.add('open');
-  if (!leafletMap) return;
-
-  // ждём кадр, чтобы плашка успела отрисоваться с реальной высотой
-  requestAnimationFrame(() => {
-    const panelTop = panel.getBoundingClientRect().top;
-    const markerPoint = leafletMap.latLngToContainerPoint([c.lat, c.lng]);
-    const mapTop = document.getElementById('mapDiv').getBoundingClientRect().top;
-    const markerScreenY = mapTop + markerPoint.y;
-    const margin = 24;
-
-    leafletMap.setView([c.lat, c.lng], leafletMap.getZoom(), { animate: false });
-
-    const neededTop = panelTop - margin;
-    if (markerScreenY > neededTop) {
-      leafletMap.panBy([0, markerScreenY - neededTop], { animate: true, duration: 0.3 });
-    }
-  });
-}<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -126,7 +97,7 @@ function showMapPanel(i) {
   .tabs::-webkit-scrollbar { display: none; }
 
   .tab {
-    flex: 0 0 auto; font-size: 12px; padding: 6px 14px; border-radius: 20px;
+    flex-shrink: 0; font-size: 12px; padding: 6px 14px; border-radius: 20px;
     color: var(--ink-soft); white-space: nowrap; cursor: pointer; border: 1px solid var(--gold);
     background: var(--parchment);
   }
@@ -947,15 +918,14 @@ function showMapPanel(i) {
   if (!panel) return;
 
   document.getElementById('mapPanelTitle').textContent = c.name;
-  document.getElementById('mapPanelMeta').textContent =
-    `${c.town}${c.pop && c.pop !== '—' ? ' · ' + c.pop : ''} • ${lang === 'ru' ? c.builtRu : c.built}`;
-  document.getElementById('mapPanelDesc').textContent =
-    lang === 'ru' ? (c.sayRu || c.factsRu) : (c.say || c.facts);
-
+  document.getElementById('mapPanelMeta').textContent = `${c.town}${c.pop && c.pop !== '—' ? ' · ' + c.pop : ''} • ${lang === 'ru' ? c.builtRu : c.built}`;
+  
+  const shortText = lang === 'ru' ? (c.sayRu || c.factsRu) : (c.say || c.facts);
+  document.getElementById('mapPanelDesc').textContent = shortText;
+  
   panel.classList.add('open');
   if (!leafletMap) return;
 
-  // ждём кадр, чтобы плашка успела отрисоваться с реальной высотой
   requestAnimationFrame(() => {
     const panelTop = panel.getBoundingClientRect().top;
     const markerPoint = leafletMap.latLngToContainerPoint([c.lat, c.lng]);
@@ -971,6 +941,7 @@ function showMapPanel(i) {
     }
   });
 }
+
 document.getElementById('prevBtn').addEventListener('click', () => { if (index > 0) { index--; renderGuide(); } });
 document.getElementById('nextBtn').addEventListener('click', () => { if (index < castles.length - 1) { index++; renderGuide(); } });
 document.getElementById('checkBtn').addEventListener('click', () => {
