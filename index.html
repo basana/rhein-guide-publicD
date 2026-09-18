@@ -228,6 +228,23 @@
   .progress-track { flex: 1; height: 6px; background: var(--parchment-deep); border-radius: 3px; overflow: hidden; border: 1px solid var(--gold); }
   .progress-fill { height: 100%; background: var(--terracotta); width: 0%; }
   .progress-label { font-size: 11px; color: var(--ink-soft); white-space: nowrap; font-weight: 600; }
+  
+/* Фоновый водяной знак с вашей оригинальной эмблемой */
+.app::after {
+  content: "";
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 260px;
+  height: 260px;
+  background-image: url('my-original-stamp.png'); /* Ваша тонкая эмблема-штемпель */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.05; /* Легчайший винтажный оттиск */
+  pointer-events: none;
+  z-index: 0;
+}
 </style>
 </head>
 <body>
@@ -1010,6 +1027,43 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
+</script>
+  <!-- Интеграция кастомной иконки замка -->
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // 1. Создаем внешний вид иконки
+    const customCastleIcon = L.divIcon({
+      className: 'custom-castle-pin',
+      html: `
+        <div style="
+          background: var(--terracotta);
+          border: 2px solid #fff;
+          border-radius: 50%;
+          width: 38px;
+          height: 38px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          overflow: hidden;
+          padding: 4px;
+        ">
+          <img src="new-vector-castle.png" style="width: 100%; height: 100%; object-fit: contain; filter: invert(1);">
+        </div>
+      `,
+      iconSize: [38, 38],
+      iconAnchor: [19, 19]
+    });
+
+    // 2. Применяем иконку ко всем меткам замков на карте
+    if (typeof castles !== 'undefined' && typeof leafletMap !== 'undefined') {
+      castles.forEach((c) => {
+        if (c.lat && c.lng) {
+          L.marker([c.lat, c.lng], { icon: customCastleIcon }).addTo(leafletMap);
+        }
+      });
+    }
+  });
 </script>
 </body>
 </html>
