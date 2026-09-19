@@ -143,12 +143,13 @@
   }
 
   .station-title {
-    margin: 0 0 10px; text-align: center;
+    margin: 0 0 10px; text-align: right;
     font-size: calc(clamp(22px, 6vw, 28px) * var(--scale)); font-weight: 600;
   }
 
   .desc {
-    margin: 0 auto 18px; max-width: 38ch; text-align: center;
+    margin: 0 0 18px; text-align: right;
+    columns: 2; column-gap: 20px; column-fill: auto; column-rule: 1px solid var(--gold);
     font-size: calc(clamp(15px, 4vw, 16.5px) * var(--scale)); line-height: 1.65;
   }
 
@@ -191,8 +192,8 @@
 
   .map-legend {
     position: absolute;
-    top: 92px;
-    left: 12px;
+    top: 12px;
+    right: 12px;
     z-index: 1000;
     background: var(--parchment-deep);
     border: 1px solid var(--gold);
@@ -262,7 +263,7 @@
     content: "";
     position: fixed;
     bottom: 20px;
-    right: 20px;
+    left: 20px;
     width: 260px;
     height: 260px;
     background-image: url('emblem-stamp.png?v=2');
