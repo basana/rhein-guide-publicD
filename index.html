@@ -188,6 +188,32 @@
   .stat-table td { padding: 4px; border-bottom: 1px solid var(--gold); }
 
   #view-map { position: relative; height: 100%; padding: 0 !important; }
+
+  .map-legend {
+    position: absolute;
+    top: 92px;
+    left: 12px;
+    z-index: 1000;
+    background: var(--parchment-deep);
+    border: 1px solid var(--gold);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-family: var(--sans);
+    font-size: 11.5px;
+    color: var(--ink);
+    box-shadow: 0 2px 6px rgba(90, 67, 39, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 168px;
+    line-height: 1.3;
+  }
+  .map-legend-item { display: flex; align-items: center; gap: 8px; }
+  .map-legend-icon {
+    width: 20px; height: 20px; border-radius: 50%; flex: 0 0 20px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  }
   #mapDiv { width: 100%; height: 100%; min-height: 60vh; border-radius: 12px; border: 1px solid var(--gold); }
 
   .map-panel {
@@ -243,7 +269,7 @@
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    opacity: 0.15; /* временно повышено для проверки, что знак вообще виден — потом верните 0.05 */
+    opacity: 0.045;
     pointer-events: none;
     z-index: -1;
   }
@@ -308,6 +334,7 @@
     <!-- КАРТА -->
     <div class="view" id="view-map">
       <div id="mapDiv"></div>
+      <div class="map-legend" id="mapLegend"></div>
       <div class="map-panel" id="mapPanel">
         <div class="map-panel-head">
           <div style="flex:1">
@@ -871,6 +898,25 @@ function renderInfo() {
   `;
 }
 
+function renderMapLegend() {
+  const el = document.getElementById('mapLegend');
+  if (!el) return;
+  const castleLabel = lang === 'ru' ? 'Замки — экскурсии в крепости' : 'Castles — fortress tours';
+  const townLabel = lang === 'ru' ? 'Города — экскурсии по старому городу' : 'Towns — old town walking tours';
+  el.innerHTML = `
+    <div class="map-legend-item">
+      <div class="map-legend-icon" style="background:var(--terracotta);">
+        <img src="new-vector-castle.png?v=2" alt="" style="width:70%;height:70%;object-fit:contain;filter:invert(1);">
+      </div>
+      <span>${castleLabel}</span>
+    </div>
+    <div class="map-legend-item">
+      <div class="map-legend-icon" style="background:#8A6A34;"></div>
+      <span>${townLabel}</span>
+    </div>
+  `;
+}
+
 function initMap() {
   if (leafletMap) {
     setTimeout(() => leafletMap.invalidateSize(), 50);
@@ -1011,6 +1057,7 @@ document.querySelectorAll('.pill-btn[data-lang]').forEach(btn => {
     renderLegendsList();
     renderRouteList();
     renderInfo();
+    renderMapLegend();
   });
 });
 
@@ -1056,6 +1103,7 @@ renderCastlesList();
 renderLegendsList();
 renderRouteList();
 renderInfo();
+renderMapLegend();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
