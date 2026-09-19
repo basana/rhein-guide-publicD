@@ -41,6 +41,8 @@
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     overflow: hidden;
+    position: relative;
+    z-index: 0;
   }
 
   .header {
@@ -230,7 +232,7 @@
   .progress-label { font-size: 11px; color: var(--ink-soft); white-space: nowrap; font-weight: 600; }
 
   /* Водяной знак-эмблема на фоне сайта */
-  body::after {
+  .app::before {
     content: "";
     position: fixed;
     bottom: 20px;
@@ -241,7 +243,7 @@
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    opacity: 0.05;
+    opacity: 0.15; /* временно повышено для проверки, что знак вообще виден — потом верните 0.05 */
     pointer-events: none;
     z-index: -1;
   }
